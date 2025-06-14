@@ -1,0 +1,280 @@
+{# templates/training.html #}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>背景 SAC 訓練系統</title>
+    {% load static %}
+
+    <script>
+        // ————————————————
+        // 动态生成商品上下限表单（维持原来的逻辑，不动）
+        // ————————————————
+        function generateFields() {
+            var productCount = document.getElementById("productCount").value;
+            var container = document.getElementById("fieldsContainer");
+            container.innerHTML = "";
+            for (var i = 0; i < productCount; i++) {
+                var fs = document.createElement("fieldset");
+                var legend = document.createElement("legend");
+                legend.innerHTML = "商品 " + i;
+                fs.appendChild(legend);
+
+                fs.innerHTML += '買進價格下限：<input type="text" name="buy_low_' + i + '" required><br>';
+                fs.innerHTML += '買進價格上限：<input type="text" name="buy_high_' + i + '" required><br>';
+                fs.innerHTML += '賣出價格下限：<input type="text" name="sell_low_' + i + '" required><br>';
+                fs.innerHTML += '賣出價格上限：<input type="text" name="sell_high_' + i + '" required><br>';
+                container.appendChild(fs);
+                container.innerHTML += "<br>";
+            }
+        }
+
+        // —————————————————————————
+        // pollStatus(): 每秒轮询 /training_status_api/
+        // —————————————————————————
+        function pollStatus() {
+            fetch('/training_status_api/?t=' + new Date().getTime())
+                .then(res => res.json())
+                .then(data => {
+                    // —— 更新基本状态 —— 
+                    document.getElementById("currentEpisode").textContent = data.current_episode + " / " + data.total_episodes;
+                    document.getElementById("reward").textContent = data.reward;
+                    document.getElementById("statusMsg").textContent = data.message;
+                    document.getElementById("cpi").textContent = data.cpi.toFixed(3);
+                    document.getElementById("playerGold").textContent = data.player_gold_avg.toFixed(1);
+
+                    // —— 更新「商品即时价格」 —— 
+                    var productContainer = document.getElementById("productContainer");
+                    productContainer.innerHTML = "";
+                    data.avg_buy_price.forEach(function(buy, i) {
+                        var sell = data.avg_sell_price[i];
+                        var p = document.createElement("p");
+                        p.textContent = "商品 " + i + "：目前買進價格 = " + buy + "，賣出價格 = " + sell;
+                        productContainer.appendChild(p);
+                    });
+
+                    // —— 更新「初始上下限」 —— 
+                    var boundsContainer = document.getElementById("finalBoundsContainer");
+                    boundsContainer.innerHTML = "";
+                    if (data.final_buy_bounds && data.final_buy_bounds.length > 0) {
+                        for (var i = 0; i < data.final_buy_bounds.length; i++) {
+                            var buyBound  = data.final_buy_bounds[i];
+                            var sellBound = data.final_sell_bounds[i];
+                            var boundP = document.createElement("p");
+                            boundP.textContent = "商品 " + i + " 初始價格區間：" +
+                                                "買進（" + buyBound[0] + "～" + buyBound[1] + "），" +
+                                                "賣出（" + sellBound[0] + "～" + sellBound[1] + "）";
+                            boundsContainer.appendChild(boundP);
+                        }
+                    }
+
+                    // —— 更新「商品统计（平均人数与量）」 —— 
+                    var statsContainer = document.getElementById("perProductStats");
+                    statsContainer.innerHTML = "<h3>商品統計（平均人數與量）</h3>";
+                    data.per_product_stats.forEach(function(item) {
+                        var sp = document.createElement("p");
+                        sp.textContent = "商品 " + item.product_id
+                                        + "：買家人數="   + item.avg_buy_cnt.toFixed(1)
+                                        + "，賣家人數=" + item.avg_sell_cnt.toFixed(1)
+                                        + "；買進量="   + item.avg_buy_vol.toFixed(1)
+                                        + "，賣出量=" + item.avg_sell_vol.toFixed(1);
+                        statsContainer.appendChild(sp);
+                    });
+
+                    // —— 等 1 秒后再轮询 —— 
+                    setTimeout(pollStatus, 1000);
+                })
+                .catch(err => console.log(err));
+        }
+
+        // ——————————————————————————————
+        // refreshImage(): 每秒刷新 Reward 图（防缓存）
+        // ——————————————————————————————
+        function refreshImage() {
+            var img = document.getElementById("rewardImg");
+            img.src = "{% static 'images/sac_reward.png' %}?" + new Date().getTime();
+        }
+        setInterval(refreshImage, 1000);
+
+        window.onload = function() {
+            pollStatus();
+        };
+
+        // ————————————————
+        // 新增：動態生成「關聯規則」欄位
+        // ————————————————
+        function generateRuleFields() {
+            var rulesCount = parseInt(document.getElementById("rulesCount").value);
+            var container  = document.getElementById("rulesContainer");
+            container.innerHTML = "";
+
+            for (var i = 0; i < rulesCount; i++) {
+                var fs = document.createElement("fieldset");
+                var legend = document.createElement("legend");
+                legend.textContent = "規則 " + (i+1);
+                fs.appendChild(legend);
+
+                // 1) Antecedent（前置項，可輸入 "0,1" 等）:
+                var labelAnte  = document.createElement("label");
+                labelAnte.textContent = "Antecedent（前置項，多品項逗號分隔）: ";
+                var inputAnte  = document.createElement("input");
+                inputAnte.type  = "text";
+                inputAnte.name  = "antecedent_" + i;
+                inputAnte.required = true;
+                labelAnte.appendChild(inputAnte);
+                fs.appendChild(labelAnte);
+                fs.appendChild(document.createElement("br"));
+
+                // 2) Consequent（結論項，單一商品索引）:
+                var labelCons  = document.createElement("label");
+                labelCons.textContent = "Consequent（結論項，單一索引）: ";
+                var inputCons  = document.createElement("input");
+                inputCons.type  = "text";
+                inputCons.name  = "consequent_" + i;
+                inputCons.required = true;
+                labelCons.appendChild(inputCons);
+                fs.appendChild(labelCons);
+                fs.appendChild(document.createElement("br"));
+
+                // 3) Rule Type（互補品 or 替代品）:
+                var labelType = document.createElement("label");
+                labelType.textContent = "規則類型: ";
+                var selectType = document.createElement("select");
+                selectType.name = "rule_type_" + i;
+                selectType.required = true;
+                var opt1 = document.createElement("option");
+                opt1.value = "complementary"; opt1.textContent = "互補品";
+                var opt2 = document.createElement("option");
+                opt2.value = "substitute";    opt2.textContent = "替代品";
+                selectType.appendChild(opt1);
+                selectType.appendChild(opt2);
+                labelType.appendChild(selectType);
+                fs.appendChild(labelType);
+                fs.appendChild(document.createElement("br"));
+
+                // 4A) 互補品：confidence + support
+                var divComplementary = document.createElement("div");
+                divComplementary.id = "compFields_" + i;
+                divComplementary.innerHTML =
+                    '<label>Confidence (0~1)：<input type="number" step="0.01" min="0" max="1" name="confidence_' + i + '" required></label><br>' +
+                    '<label>Support    (0~1)：<input type="number" step="0.01" min="0" max="1" name="support_'    + i + '" required></label><br>';
+                fs.appendChild(divComplementary);
+
+                // 4B) 替代品：probability + support
+                var divSubstitute = document.createElement("div");
+                divSubstitute.id = "subFields_" + i;
+                divSubstitute.style.display = "none";
+                divSubstitute.innerHTML =
+                    '<label>Probability (0~1)：<input type="number" step="0.01" min="0" max="1" name="probability_' + i + '" required></label><br>' +
+                    '<label>Support     (0~1)：<input type="number" step="0.01" min="0" max="1" name="support_'     + i + '" required></label><br>';
+                divSubstitute.querySelectorAll('input').forEach(el => el.required = false);
+                fs.appendChild(divSubstitute);
+
+                // 根據 rule_type 切換顯示哪組欄位
+                selectType.onchange = (function (idx) {
+                    return function () {
+                        var sel     = this.value;
+                        var compDiv = document.getElementById("compFields_" + idx); // 互補品區
+                        var subDiv  = document.getElementById("subFields_"  + idx); // 替代品區
+
+                        if (sel === "complementary") {
+                            //── 顯示互補品區 ─────────────────────────
+                            compDiv.style.display = "block";
+                            subDiv.style.display  = "none";
+
+                            // 互補品區：啟用 + required
+                            compDiv.querySelectorAll("input").forEach(el => {
+                                el.disabled = false;   // ★這行最關鍵
+                                el.required = true;
+                            });
+
+                            // 替代品區：清空 + 停用 (disabled) + 取消 required
+                            subDiv.querySelectorAll("input").forEach(el => {
+                                el.value    = "";
+                                el.disabled = true;    // ★這行最關鍵
+                                el.required = false;
+                            });
+
+                        } else { // substitute
+                            //── 顯示替代品區 ─────────────────────────
+                            compDiv.style.display = "none";
+                            subDiv.style.display  = "block";
+
+                            // 替代品區：啟用 + required
+                            subDiv.querySelectorAll("input").forEach(el => {
+                                el.disabled = false;   // ★這行最關鍵
+                                el.required = true;
+                            });
+
+                            // 互補品區：清空 + 停用
+                            compDiv.querySelectorAll("input").forEach(el => {
+                                el.value    = "";
+                                el.disabled = true;    // ★這行最關鍵
+                                el.required = false;
+                            });
+                        }
+                    };
+                })(i);
+                selectType.dispatchEvent(new Event('change'));
+                container.appendChild(fs);
+                container.appendChild(document.createElement("br"));
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>背景 SAC 訓練系統</h1>
+
+    <!-- ———————— 训练表单 ———————— -->
+    <form method="POST">
+        {% csrf_token %}
+        <label>訓練回合數（Episodes）：<input type="text" name="num_episodes" value="100"></label><br>
+        <label>每回合最大步數（Max Steps）：<input type="text" name="max_steps" value="100"></label><br>
+        <label>商品數量：<input type="number" id="productCount" name="product_count" value="3" min="1"></label>
+        <button type="button" onclick="generateFields()">生成商品欄位</button>
+        <div id="fieldsContainer"></div>
+        <br>
+
+        <!-- ———————— 新增：關聯規則輸入區 ———————— -->
+        <label>關聯規則筆數：<input type="number" id="rulesCount" name="rules_count" value="0" min="0"></label>
+        <button type="button" onclick="generateRuleFields()">生成規則欄位</button>
+        <div id="rulesContainer"></div>
+        <br><br>
+
+        <input type="submit" value="開始訓練">
+    </form>
+
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+
+    <hr>
+    <!-- ———————— 训练状态部分 ———————— -->
+    <h2>訓練狀態</h2>
+    <p>目前回合：<span id="currentEpisode">-</span></p>
+    <p>總 Reward：<span id="reward">-</span></p>
+    <p>狀態訊息：<span id="statusMsg">-</span></p>
+    <p>CPI：<span id="cpi">-</span></p>
+    <p>平均玩家金額：<span id="playerGold">-</span></p>
+
+    <hr>
+    <!-- ———————— 商品即时价格 ———————— -->
+    <h2>商品即時價格</h2>
+    <div id="productContainer"></div>
+
+    <hr>
+    <!-- ———————— 初始价格上下限 ———————— -->
+    <h2>初始價格上下限</h2>
+    <div id="finalBoundsContainer"></div>
+
+    <hr>
+    <!-- ———————— 商品统计 ———————— -->
+    <h2>商品統計</h2>
+    <div id="perProductStats"></div>
+
+    <hr>
+    <!-- ———————— Reward 折线图 ———————— -->
+    <h2>Reward 圖表</h2>
+    <img id="rewardImg" src="{% static 'images/sac_reward.png' %}" alt="SAC Reward Graph" width="600">
+</body>
+</html>

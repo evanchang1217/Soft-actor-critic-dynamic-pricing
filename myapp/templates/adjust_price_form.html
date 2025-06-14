@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>多商品一次推論</title>
+    {% load static %}
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+        fieldset {
+            margin-bottom: 10px;
+        }
+        .product-fieldset {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        table {
+            border-collapse: collapse;
+            margin-top: 10px;
+            width: 100%;
+            max-width: 600px;
+        }
+        th, td {
+            border: 1px solid #aaa;
+            padding: 6px 10px;
+            text-align: center;
+        }
+        .result-table {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<h1>多商品一次推論</h1>
+
+<!-- 輸入商品數量 & 產生欄位 -->
+<label>推論商品數量：</label>
+<input type="number" id="productCount" value="2" min="1">
+<button type="button" onclick="generateFields()">產生欄位</button>
+
+<!-- 容器，用來放動態產生的商品欄位 -->
+<div id="fieldsContainer"></div>
+
+<!-- 提交按鈕 -->
+<button type="button" onclick="computeInference()">進行推論 (Compute)</button>
+
+<!-- 顯示結果 -->
+<h2>推論結果</h2>
+<div id="resultContainer"></div>
+
+<script>
+function generateFields() {
+    var productCount = document.getElementById("productCount").value;
+    var container = document.getElementById("fieldsContainer");
+    container.innerHTML = "";
+    for (var i = 0; i < productCount; i++) {
+        var fs = document.createElement("fieldset");
+        fs.className = "product-fieldset";
+        var legend = document.createElement("legend");
+        legend.innerHTML = "商品 " + i;
+        fs.appendChild(legend);
+
+        // 商品編號
+        fs.innerHTML += '商品編號：<input type="number" class="pidx" value="' + i + '"><br>';
+        // 當前買價
+        fs.innerHTML += '當前買價：<input type="text" class="buyPrice" value="100"><br>';
+        // 當前賣價
+        fs.innerHTML += '當前賣價：<input type="text" class="sellPrice" value="120"><br>';
+        // 當天買數量
+        fs.innerHTML += '當天買數量：<input type="text" class="buyCount" value="250"><br>';
+        // 當天賣數量
+        fs.innerHTML += '當天賣數量：<input type="text" class="sellCount" value="250"><br>';
+
+        container.appendChild(fs);
+    }
+}
+
+function computeInference() {
+    // 取得所有商品欄位的資料
+    var container = document.getElementById("fieldsContainer");
+    var fieldsets = container.querySelectorAll(".product-fieldset");
+
+    var product_list = [];
+    fieldsets.forEach(function(fs) {
+        var pidx = fs.querySelector(".pidx").value;
+        var buyP = fs.querySelector(".buyPrice").value;
+        var sellP = fs.querySelector(".sellPrice").value;
+        var buyC = fs.querySelector(".buyCount").value;
+        var sellC = fs.querySelector(".sellCount").value;
+
+        product_list.push({
+            product_idx: pidx,
+            current_buy_price: buyP,
+            current_sell_price: sellP,
+            buy_count: buyC,
+            sell_count: sellC
+        });
+    });
+
+    // 準備送到後端 (JSON)
+    var payload = {
+        product_list: product_list
+    };
+
+    // AJAX POST 到 /adjust_price/
+    fetch('/adjust_price/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            // 如果你有使用 Django CSRF，需另外帶入 CSRF Token
+            'X-CSRFToken': getCookie('csrftoken') 
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'ok') {
+            showResults(data.results);
+        } else {
+            alert("Error: " + data.message);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("發生錯誤: " + err);
+    });
+}
+
+// 在頁面上顯示推論結果 (以表格呈現)
+function showResults(results) {
+    var container = document.getElementById("resultContainer");
+    container.innerHTML = "";
+
+    if (!results || results.length === 0) {
+        container.innerHTML = "<p>沒有推論結果</p>";
+        return;
+    }
+
+    var table = document.createElement("table");
+    table.className = "result-table";
+    var thead = document.createElement("thead");
+    thead.innerHTML = `
+        <tr>
+            <th>商品編號</th>
+            <th>調整後買價</th>
+            <th>調整後賣價</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+
+    var tbody = document.createElement("tbody");
+    results.forEach(function(r) {
+        var tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${r.product_idx}</td>
+            <td>${r.new_buy_price.toFixed(2)}</td>
+            <td>${r.new_sell_price.toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    container.appendChild(table);
+}
+
+/**
+ * 簡易取得 CSRF Token
+ * 參考 Django 文件 https://docs.djangoproject.com/en/3.2/howto/csrf/#ajax
+ */
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// 頁面載入時，預先產生欄位 (可自行調整預設數量)
+window.onload = function() {
+    generateFields();
+};
+</script>
+
+</body>
+</html>

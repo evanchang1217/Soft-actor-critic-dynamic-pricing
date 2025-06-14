@@ -1,0 +1,488 @@
+{# templates/server_status.html #}
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Minecraft Server Status</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --minecraft-green: #4CAF50;
+            --minecraft-brown: #8B4513;
+            --dark-bg: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --table-header-bg: #f0f0f0;
+            --table-row-alt-bg: #fafafa;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 2rem auto;
+            padding: 2rem;
+            max-width: 1200px;
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+            background: linear-gradient(45deg, var(--minecraft-green), #45a049);
+            border-radius: 15px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
+        }
+
+        .header-section h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-section .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-top: 0.5rem;
+        }
+
+        .stats-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .stats-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .stats-label {
+            color: #6c757d;
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(45deg, var(--minecraft-green), #45a049);
+            border-radius: 2px;
+        }
+
+        .player-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid var(--minecraft-green);
+            transition: transform 0.3s ease;
+        }
+
+        .player-card:hover {
+            transform: translateX(5px);
+        }
+
+        .player-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--minecraft-green);
+            margin-bottom: 1rem;
+        }
+
+        .trade-type {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .trade-sell {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a5a);
+            color: white;
+        }
+
+        .trade-buy {
+            background: linear-gradient(45deg, #4ecdc4, #44b3ab);
+            color: white;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .product-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease;
+        }
+
+        .product-item:hover {
+            border-color: var(--minecraft-green);
+        }
+
+        .product-name {
+            font-weight: bold;
+            color: #333;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-quantity {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--minecraft-green);
+        }
+
+        .error-alert {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a5a);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+        }
+
+        .price-table th,
+        .price-table td {
+            border: 1px solid #ddd;
+            padding: 0.75rem;
+            text-align: center;
+        }
+
+        .price-table th {
+            background: var(--table-header-bg);
+            font-weight: bold;
+        }
+
+        .price-table tbody tr:nth-child(odd) {
+            background: var(--table-row-alt-bg);
+        }
+
+        @media (max-width: 768px) {
+            .header-section h1 {
+                font-size: 2rem;
+            }
+            
+            .stats-number {
+                font-size: 2rem;
+            }
+            
+            .products-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <!-- Header Section -->
+            <div class="header-section">
+                <h1><i class="bi bi-server"></i> Minecraft Server Status</h1>
+                <div class="subtitle">實時服務器狀態監控面板</div>
+            </div>
+
+            <!-- Error Message -->
+            {% if error_message %}
+                <div class="error-alert" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    {{ error_message }}
+                </div>
+            {% else %}
+
+                <!-- 1. Player Statistics -->
+                <div class="row mb-5">
+                    <div class="col-12">
+                        <h2 class="section-title">
+                            <i class="bi bi-people-fill me-2"></i>玩家統計
+                        </h2>
+                    </div>
+                    
+                    {% if player_data %}
+                        <div class="col-md-6 mb-4">
+                            <div class="stats-card text-center">
+                                <div class="stats-icon text-success">
+                                    <i class="bi bi-person-check-fill"></i>
+                                </div>
+                                <div class="stats-number text-success">
+                                    {{ player_data.onlinePlayers }}
+                                </div>
+                                <div class="stats-label">當前在線玩家</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="stats-card text-center">
+                                <div class="stats-icon text-primary">
+                                    <i class="bi bi-calendar-check-fill"></i>
+                                </div>
+                                <div class="stats-number text-primary">
+                                    {{ player_data.loggedInTodayPlus2}}
+                                </div>
+                                <div class="stats-label">今日登入玩家</div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="col-12">
+                            <div class="empty-state">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <p>暫無玩家數據</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- 2. Market Status (Each Player) -->
+                <div>
+                    <h2 class="section-title">
+                        <i class="bi bi-shop me-2"></i>市場狀態
+                    </h2>
+                    {% if market_data %}
+                        <div class="row">
+                            {% for item in market_data %}
+                                <div class="col-lg-6 mb-4">
+                                    <div class="player-card">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div class="player-name">
+                                                <i class="bi bi-person-fill me-2"></i>
+                                                {{ item.player }}
+                                            </div>
+                                            <div class="trade-type {% if item.type == 'sell' %}trade-sell{% else %}trade-buy{% endif %}">
+                                                {% if item.type == 'sell' %}
+                                                    <i class="bi bi-arrow-up-circle me-1"></i>出售
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down-circle me-1"></i>收購
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+
+
+                                        <div>
+                                            <h6 class="text-muted mb-2">
+                                                <i class="bi bi-box-seam me-1"></i>商品清單
+                                            </h6>
+                                            <div class="products-grid">
+                                                {% for display_name, qty in item.products %}
+                                                    {% if qty > 0 %}
+                                                        <div class="product-item">
+                                                            <div class="product-name">
+                                                                {{ display_name }}
+                                                            </div>
+                                                            <div class="product-quantity">
+                                                                {{ qty }}
+                                                            </div>
+                                                        </div>
+                                                    {% endif %}
+                                                {% endfor %}
+                                                {% if item.products|length == 0 %}
+                                                    <div class="empty-state">
+                                                        <i class="bi bi-box"></i>
+                                                        <p>無商品資料</p>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-shop"></i>
+                            <p>暫無市場數據</p>
+                        </div>
+                    {% endif %}
+                </div>                
+
+                <!-- 3. Server Sell Prices -->
+                <div class="mb-5">
+                    <h2 class="section-title">
+                        <i class="bi bi-cash-stack me-2"></i>伺服器當天全品項出售價
+                    </h2>
+                    {% if sell_prices %}
+                        <table class="price-table">
+                            <thead>
+                                <tr>
+                                    <th>品項</th>
+                                    <th>出售單價</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in sell_prices %}
+                                    <tr>
+                                        <td>{{ item.name }}</td>
+                                        <td>{{ item.price }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-coin"></i>
+                            <p>暫無出售價資料</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- 4. Server Buy Prices -->
+                <div class="mb-5">
+                    <h2 class="section-title">
+                        <i class="bi bi-cart-check me-2"></i>伺服器當天全品項採購價
+                    </h2>
+                    {% if buy_prices %}
+                        <table class="price-table">
+                            <thead>
+                                <tr>
+                                    <th>品項</th>
+                                    <th>採購單價</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in buy_prices %}
+                                    <tr>
+                                        <td>{{ item.name }}</td>
+                                        <td>{{ item.price }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-cart-x"></i>
+                            <p>暫無採購價資料</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+
+
+            {% endif %}
+            
+            <!-- Footer: Last Update Time -->
+            <div class="text-center mt-5 pt-4 border-top">
+                <p class="text-muted">
+                    <i class="bi bi-clock me-1"></i>
+                    最後更新時間: <span id="currentTime"></span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Update current time every second
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('currentTime').textContent = timeString;
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Smooth scrolling for anchor links (if any)
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Fade-in animation for cards
+        const cards = document.querySelectorAll('.stats-card, .player-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    </script>
+</body>
+</html>
