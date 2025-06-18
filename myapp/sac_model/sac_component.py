@@ -527,7 +527,7 @@ def run_sac_training(num_episodes,max_steps,num_products,progress_callback=None,
                 avg_buy_price   = avg_buy_prices,
                 avg_sell_price  = avg_sell_prices,
                 reward          = round(float(ep_ret), 2),
-                cpi             = float(cpi), ####################################
+                cpi             = float(cpi), 
                 player_gold_avg = float(player_gold),      # 人均金幣
                 per_product_stats = per_product_stats       # 逐商品統計
             )
