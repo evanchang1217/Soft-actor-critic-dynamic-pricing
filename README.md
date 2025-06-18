@@ -3,7 +3,6 @@ A web-based simulation platform that uses Soft Actor-Critic (SAC) reinforcement 
 
 > 🏆 2nd Place — NCKU CSIE Capstone Competition (115th)
 
-![Dashboard Screenshot](docs/dashboard_screenshot.png)
 
 ---
 
@@ -18,4 +17,4 @@ This project integrates a PyTorch-based SAC model into a Django-powered web inte
 - Interactive dashboard powered by Chart.js
 - CPI and reward trend tracking for economic stability analysis
 
-> Note: This project is designed to run on localhost. The dashboard shown above represents a live simulation running locally.
+> Note: This project is designed to run on localhost.
