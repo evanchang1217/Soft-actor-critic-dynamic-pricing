@@ -1,4 +1,21 @@
 # Soft Actor-Critic Dynamic Pricing
+A web-based simulation platform that uses Soft Actor-Critic (SAC) reinforcement learning to dynamically adjust in-game product prices and stabilize a virtual economy.
 
-**NCKU 資工系第115屆專題競賽 第二名**
-本專案以 SAC 強化學習模型自動調控 MMORPG 商品價格，穩定物價與抑制通膨。
+> 🏆 2nd Place — NCKU CSIE Capstone Competition (115th)
+
+![Dashboard Screenshot](docs/dashboard_screenshot.png)
+
+---
+
+## 🔍 Overview
+
+This project integrates a PyTorch-based SAC model into a Django-powered web interface. It simulates a multi-agent virtual economy of 200 players and 10 products, allowing real-time visualization of pricing decisions, reward progression, and CPI stability.
+
+### Key Features
+- Soft Actor-Critic (SAC) model for dynamic pricing optimization
+- Simulation of 200 virtual players trading 10 in-game products
+- Django backend with real-time visual interface
+- Interactive dashboard powered by Chart.js
+- CPI and reward trend tracking for economic stability analysis
+
+> Note: This project is designed to run on localhost. The dashboard shown above represents a live simulation running locally.
