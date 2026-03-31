@@ -1,21 +1,60 @@
 # Soft Actor-Critic Dynamic Pricing
 
-A web-based simulation platform that uses Soft Actor-Critic (SAC) reinforcement learning to dynamically adjust in-game product prices and stabilize a virtual economy.
+This repository contains an NCKU CSIE capstone project that applies Soft Actor-Critic (SAC) reinforcement learning to dynamic pricing in a simulated in-game economy.
 
-> 🏆 2nd Place out of 87 teams — NCKU CSIE Capstone Competition (115th)
+The project combines:
+- A PyTorch-based SAC training loop
+- A Django web interface for configuring experiments
+- A simple dashboard for reward, CPI, and per-product statistics
 
+Project note:
+- 2nd place out of 87 teams in the NCKU CSIE capstone competition
+- The repository has been cleaned up so reviewers can run it locally more easily
 
----
+## Features
 
-## 🔍 Overview
+- Dynamic pricing with Soft Actor-Critic
+- Multi-product virtual economy simulation
+- Configurable training parameters from a web UI
+- Reward and CPI trend visualization
+- Optional server status page for a local market API
 
-This project integrates a PyTorch-based SAC model into a Django-powered web interface. It simulates a multi-agent virtual economy of 200 players and 10 products, allowing real-time visualization of pricing decisions, reward progression, and CPI stability.
+## Quick Start
 
-### Key Features
-- Soft Actor-Critic (SAC) model for dynamic pricing optimization
-- Simulation of 200 virtual players trading 10 in-game products
-- Django backend with real-time visual interface
-- Interactive dashboard powered by Chart.js
-- CPI and reward trend tracking for economic stability analysis
+1. Install dependencies
 
-> Note: This project is designed to run locally on `localhost`. Dashboard screenshots are included in the project poster.
+```bash
+pip install -r requirements.txt
+```
+
+2. Create a local `.env` file from `.env.example`
+
+```env
+SECRET_KEY=replace-with-a-local-django-secret-key
+DEBUG=True
+ALLOWED_HOSTS=127.0.0.1,localhost
+```
+
+3. Run database migrations
+
+```bash
+python manage.py migrate
+```
+
+4. Start the development server
+
+```bash
+python manage.py runserver
+```
+
+5. Open the app in your browser
+
+- Training page: `http://127.0.0.1:8000/`
+- Training page alias: `http://127.0.0.1:8000/start_training/`
+- Optional server status page: `http://127.0.0.1:8000/server_status/`
+
+## Notes
+
+- `server_status/` depends on a separate local API running at `127.0.0.1:4567`.
+- Training will generate `statics/images/sac_reward.png` locally while the app is running.
+- The `Poster/` folder contains the project poster used for presentation.

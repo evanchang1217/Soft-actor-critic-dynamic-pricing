@@ -1,3 +1,8 @@
 __pycache__/
+*.py[cod]
 *.sqlite3
 db.sqlite3
+.env
+.venv/
+venv/
+statics/images/sac_reward.png

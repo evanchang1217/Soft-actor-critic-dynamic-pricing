@@ -1,29 +1,21 @@
 #!/usr/bin/env python
-
-import sys
-
-# ---- SQLITE MONKEY-PATCH 開始 ----
-try:
-    import pysqlite3
-    # 用 pysqlite3 取代標準庫的 sqlite3
-    sys.modules['sqlite3'] = pysqlite3
-    sys.modules['sqlite3.dbapi2'] = pysqlite3
-    print(f"🍀 sqlite3 已被 monkey-patch， 使用版本：{pysqlite3.sqlite_version}")
-except ImportError:
-    # 如果沒有安裝 pysqlite3-binary，就跳過
-    pass
-
-
-
-#!/usr/bin/env python
 """Django's command-line utility for administrative tasks."""
+
 import os
 import sys
+
+try:
+    import pysqlite3
+except ImportError:
+    pysqlite3 = None
+else:
+    sys.modules["sqlite3"] = pysqlite3
+    sys.modules["sqlite3.dbapi2"] = pysqlite3
 
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'project.settings')
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
@@ -35,5 +27,5 @@ def main():
     execute_from_command_line(sys.argv)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
