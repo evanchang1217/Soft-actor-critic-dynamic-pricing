@@ -1,0 +1,17 @@
+{
+  "kind": "comparison-suite",
+  "created_at_utc": "2026-10-28T13:46:42.563047+00:00",
+  "python": "3.10.12",
+  "platform": "Linux-6.5.0-45-generic-x86_64-with-glibc2.35",
+  "packages": {
+    "torch": "2.6.0+cpu",
+    "numpy": "2.2.6",
+    "gymnasium": "1.4.0",
+    "matplotlib": "3.10.9",
+    "Django": "5.2.18",
+    "requests": "2.34.2"
+  },
+  "git_commit": "e092c8684b2e42dd0277d053d38824a194e51aac",
+  "git_dirty": true,
+  "python_source_sha256": "cf337cbdf430b6cae1e2b1fc5094b6f5e344419fa6378cf1bce7d7dc8aa31f61"
+}

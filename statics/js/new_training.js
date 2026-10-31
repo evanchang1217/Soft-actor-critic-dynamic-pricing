@@ -1,295 +1,155 @@
-// static/js/new_training.js
+"use strict";
 
-/**
- * 1. 動態產生「商品價格上下限」欄位
- */
-function generateFields() {
-    const cnt = parseInt(document.getElementById("productCount").value || 0, 10);
-    const wrap = document.getElementById("fieldsContainer");
-    wrap.innerHTML = "";
-    for (let i = 0; i < cnt; i++) {
-      wrap.insertAdjacentHTML(
-        "beforeend",
-        `<!-- 使用反引號包整段 HTML，否則內部的 ${i} 會被跑錯 -->
-        <div class="fieldset-custom">
-          <div class="legend-custom"><i class="bi bi-box"></i> 商品 ${i}</div>
-          <div class="row mb-3">
-            <div class="col-md-6">
-              <label class="form-label">
-                <i class="bi bi-arrow-down-circle text-success"></i> 買進價格下限
-              </label>
-              <input type="number" class="form-control" name="buy_low_${i}" required step="0.01" />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">
-                <i class="bi bi-arrow-up-circle text-danger"></i> 買進價格上限
-              </label>
-              <input type="number" class="form-control" name="buy_high_${i}" required step="0.01" />
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6">
-              <label class="form-label">
-                <i class="bi bi-arrow-down-circle text-success"></i> 賣出價格下限
-              </label>
-              <input type="number" class="form-control" name="sell_low_${i}" required step="0.01" />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">
-                <i class="bi bi-arrow-up-circle text-danger"></i> 賣出價格上限
-              </label>
-              <input type="number" class="form-control" name="sell_high_${i}" required step="0.01" />
-            </div>
-          </div>
-        </div>`
-      );
+const descriptions = {
+  sac: "Soft Actor-Critic learns continuous price and fee adjustments from market rewards.",
+  fixed: "Keep the initial sampled prices and fee unchanged throughout each episode.",
+  random: "Sample bounded price and fee changes at every market step.",
+  adaptive: "Adjust prices from the previous step's trading participation. Keep the initial fee."
+};
+let latestHistory = [];
+const byId = (id) => document.getElementById(id);
+const format = (value, digits = 2) => Number(value).toLocaleString("en-US", {maximumFractionDigits: digits});
+
+function updateStrategyHelp() {
+  byId("strategy-help").textContent = descriptions[byId("method").value];
+}
+
+function addProduct() {
+  const wrap = byId("product-fields");
+  const index = wrap.children.length;
+  if (index >= 12) return;
+  const field = document.createElement("fieldset");
+  field.className = "product-field";
+  field.innerHTML = `<legend>Product ${index + 1}</legend><label for="name-${index}">Name</label>
+    <input id="name-${index}" name="name_${index}" value="Product ${index + 1}" maxlength="60" required><div class="field-grid"></div>`;
+  const grid = field.querySelector(".field-grid");
+  for (const [key, label, value] of [["buy_low", "Buy min", 10], ["buy_high", "Buy max", 20], ["sell_low", "Sell min", 25], ["sell_high", "Sell max", 50]]) {
+    const cell = document.createElement("div");
+    cell.innerHTML = `<label for="${key}-${index}">${label}</label><input id="${key}-${index}" name="${key}_${index}" type="number" min="0.01" step="0.01" value="${value}" required>`;
+    grid.appendChild(cell);
+  }
+  wrap.appendChild(field);
+  byId("product-count").value = index + 1;
+}
+
+function drawChart(id, values, color) {
+  const canvas = byId(id);
+  const width = canvas.getBoundingClientRect().width;
+  if (!width || !values.length) return;
+  const height = 160;
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = Math.round(width * ratio);
+  canvas.height = height * ratio;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(ratio, ratio);
+  const left = 55, right = width - 12, top = 16, bottom = height - 27;
+  const min = Math.min(...values), max = Math.max(...values);
+  const margin = Math.max((max - min) * 0.15, Math.abs(max) * 0.015, 0.01);
+  const low = min - margin, high = max + margin;
+  const x = (index) => left + index * (right - left) / Math.max(values.length - 1, 1);
+  const y = (value) => bottom - (value - low) * (bottom - top) / (high - low);
+  ctx.font = "10px system-ui";
+  ctx.fillStyle = "#7b8880";
+  for (let i = 0; i <= 3; i++) {
+    const value = low + (high - low) * i / 3;
+    ctx.beginPath(); ctx.strokeStyle = "#e8ede6"; ctx.lineWidth = 1;
+    ctx.moveTo(left, y(value)); ctx.lineTo(right, y(value)); ctx.stroke();
+    ctx.textAlign = "right"; ctx.fillText(format(value, 2), left - 9, y(value) + 3);
+  }
+  ctx.textAlign = "left"; ctx.fillText("1", left, height - 7);
+  ctx.textAlign = "right"; ctx.fillText(`${values.length} episodes`, right, height - 7);
+  ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
+  values.forEach((value, index) => index ? ctx.lineTo(x(index), y(value)) : ctx.moveTo(x(index), y(value)));
+  ctx.stroke();
+  if (values.length === 1) { ctx.beginPath(); ctx.arc(x(0), y(values[0]), 3, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); }
+  canvas.setAttribute("aria-label", `${id === "return-chart" ? "Episode return" : "Mean price index"}: ${values.map(v => format(v)).join(", ")}`);
+}
+
+function redrawCharts() {
+  drawChart("return-chart", latestHistory.map(row => row.return), "#237d65");
+  drawChart("cpi-chart", latestHistory.map(row => row.mean_cpi), "#a47839");
+}
+
+function updateStatus(data) {
+  byId("run-status").textContent = data.message;
+  byId("state-pill").textContent = data.state.toUpperCase();
+  byId("start-button").disabled = data.running;
+  byId("stop-button").hidden = !data.running;
+  byId("metric-episodes").textContent = data.total_episodes ? `${data.current_episode} / ${data.total_episodes}` : "—";
+  latestHistory = data.history || [];
+  const row = latestHistory.at(-1);
+  if (row) {
+    byId("metric-return").textContent = format(row.return);
+    byId("metric-cpi").textContent = format(row.mean_cpi, 3);
+    byId("metric-gold").textContent = format(row.player_gold_mean, 1);
+  } else {
+    for (const id of ["metric-return", "metric-cpi", "metric-gold"]) byId(id).textContent = "—";
+  }
+  byId("chart-empty").hidden = latestHistory.length > 0;
+  byId("chart-content").hidden = !latestHistory.length;
+  redrawCharts();
+  const info = data.latest;
+  const rows = byId("market-rows");
+  rows.replaceChildren();
+  if (info) {
+    info.buy_prices.forEach((price, index) => {
+      const tr = document.createElement("tr");
+      for (const value of [info.product_names[index], format(price), format(info.sell_prices[index]),
+        info.buy_count[index], info.sell_count[index], `${info.buy_volume[index]} / ${info.sell_volume[index]}`]) {
+        const td = document.createElement("td"); td.textContent = value; tr.appendChild(td);
+      }
+      rows.appendChild(tr);
+    });
+    byId("market-extra").textContent = `Fee ${format(info.fee_rate * 100, 1)}% · Last-step trade ${format(info.trade_volume)} units · Player-product participation ${format(info.participation * 100, 1)}%`;
+  } else {
+    const tr = document.createElement("tr"); const td = document.createElement("td");
+    td.colSpan = 6; td.className = "muted"; td.textContent = "No completed episode yet."; tr.appendChild(td); rows.appendChild(tr);
+    byId("market-extra").textContent = "";
+  }
+  const artifacts = byId("artifact-links");
+  artifacts.replaceChildren();
+  if (data.artifacts.length && !data.running) {
+    for (const name of data.artifacts) {
+      const link = document.createElement("a");
+      link.href = `/artifacts/${encodeURIComponent(data.run_id)}/${encodeURIComponent(name)}/`;
+      link.textContent = `${name} ↓`;
+      artifacts.appendChild(link);
     }
+  } else {
+    const label = document.createElement("span"); label.className = "muted";
+    label.textContent = "Available when the run finishes."; artifacts.appendChild(label);
   }
-  
-  /**
-   * 2. 每秒輪詢 /training_status_api/，更新右側各區塊
-   */
-  function pollStatus() {
-    fetch("/training_status_api/?t=" + Date.now())
-      .then((r) => r.json())
-      .then((d) => {
-        // 更新上方數值
-        document.getElementById("currentEpisode").innerHTML = `<span class="fw-bold">${d.current_episode}</span> / ${d.total_episodes}`;
-        document.getElementById("reward").textContent = d.reward.toFixed(2);
-        document.getElementById("statusMsg").innerHTML = `<span class="loading-spinner"></span> ${d.message}`;
-        document.getElementById("cpi").textContent = d.cpi.toFixed(3);
-        document.getElementById("playerGold").textContent = d.player_gold_avg.toFixed(1);
-  
-        // 商品即時價格
-        const pc = document.getElementById("productContainer");
-        pc.innerHTML = "";
-        d.avg_buy_price.forEach((buy, i) => {
-          const sell = d.avg_sell_price[i];
-          pc.insertAdjacentHTML(
-            "beforeend",
-            `<div class="col-md-4 mb-3">
-              <div class="card h-100 border-0" style="background: linear-gradient(135deg,#a8edea 0%,#fed6e3 100%);">
-                <div class="card-body text-center">
-                  <h5 class="card-title"><i class="bi bi-box"></i> 商品 ${i}</h5>
-                  <p class="card-text">
-                    <span class="badge bg-success mb-1">買進: $${buy}</span><br/>
-                    <span class="badge bg-danger">賣出: $${sell}</span>
-                  </p>
-                </div>
-              </div>
-            </div>`
-          );
-        });
-  
-        // 初始價格上下限
-        const bc = document.getElementById("finalBoundsContainer");
-        bc.innerHTML = "";
-        if (d.final_buy_bounds) {
-          d.final_buy_bounds.forEach((b, i) => {
-            const s = d.final_sell_bounds[i];
-            bc.insertAdjacentHTML(
-              "beforeend",
-              `<div class="col-md-6 mb-3">
-                <div class="card border-0" style="background: linear-gradient(135deg,#ffecd2 0%,#fcb69f 100%);">
-                  <div class="card-body">
-                    <h6 class="card-title"><i class="bi bi-box"></i> 商品 ${i} 初始價格區間</h6>
-                    <p class="card-text">
-                      <span class="badge bg-info">買進: ${b[0]} ~ ${b[1]}</span><br/>
-                      <span class="badge bg-warning">賣出: ${s[0]} ~ ${s[1]}</span>
-                    </p>
-                  </div>
-                </div>
-              </div>`
-            );
-          });
-        }
-  
-        // 商品統計
-        const sc = document.getElementById("perProductStats");
-        sc.innerHTML = "";
-        d.per_product_stats.forEach((item) => {
-          sc.insertAdjacentHTML(
-            "beforeend",
-            `<div class="col-md-4 mb-3">
-              <div class="card border-0" style="background: linear-gradient(135deg,#a18cd1 0%,#fbc2eb 100%);">
-                <div class="card-body text-center text-white">
-                  <h6 class="card-title"><i class="bi bi-graph-up"></i> 商品 ${item.product_id}</h6>
-                  <div class="row">
-                    <div class="col-6">
-                      <small>買家人數</small><br/>
-                      <strong>${item.avg_buy_cnt.toFixed(1)}</strong>
-                    </div>
-                    <div class="col-6">
-                      <small>賣家人數</small><br/>
-                      <strong>${item.avg_sell_cnt.toFixed(1)}</strong>
-                    </div>
-                  </div>
-                  <hr class="my-2" style="border-color: rgba(255,255,255,0.3);" />
-                  <div class="row">
-                    <div class="col-6">
-                      <small>買進量</small><br/>
-                      <strong>${item.avg_buy_vol.toFixed(1)}</strong>
-                    </div>
-                    <div class="col-6">
-                      <small>賣出量</small><br/>
-                      <strong>${item.avg_sell_vol.toFixed(1)}</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>`
-          );
-        });
-  
-        // 下一秒再輪詢
-        setTimeout(pollStatus, 1000);
-      })
-      .catch(console.error);
+}
+
+async function poll() {
+  let running = false;
+  try {
+    const response = await fetch("/training_status_api/", {cache: "no-store"});
+    if (!response.ok) throw new Error("Status unavailable");
+    const data = await response.json();
+    running = data.running;
+    updateStatus(data);
+  } catch (error) {
+    byId("run-status").textContent = "Connection interrupted. Retrying…";
+  } finally {
+    window.setTimeout(poll, running ? 600 : 2000);
   }
-  
-  // 每秒強制刷新 reward.png，避免瀏覽器快取
-  setInterval(() => {
-    const imgEl = document.getElementById("rewardImg");
-    if (!imgEl) return; 
-    // 1. 先讀 data-base-src (Django 已解析成 "/static/images/sac_reward.png")
-    const baseUrl = imgEl.getAttribute("data-base-src");
-    if (!baseUrl) return;
-    // 2. 再拼上 ?<timestamp>，讓瀏覽器重新載入
-    imgEl.src = baseUrl + "?" + Date.now();
-  }, 1000);
-  
-  /**
-   * 4. 動態產生「關聯規則」欄位
-   */
-  function generateRuleFields() {
-    const cnt = parseInt(document.getElementById("rulesCount").value || 0, 10);
-    const wrap = document.getElementById("rulesContainer");
-    wrap.innerHTML = "";
-    for (let i = 0; i < cnt; i++) {
-      wrap.insertAdjacentHTML(
-        "beforeend",
-        `<div class="fieldset-custom">
-          <div class="legend-custom"><i class="bi bi-diagram-3"></i> 規則 ${i + 1}</div>
-          <div class="row mb-3">
-            <div class="col-md-4">
-              <label class="form-label"><i class="bi bi-arrow-right"></i> Antecedent（前置項）</label>
-              <input type="text" class="form-control" name="antecedent_${i}" placeholder="例如: 0,1" required />
-              <small class="text-muted">多品項逗號分隔</small>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label"><i class="bi bi-bullseye"></i> Consequent（結論項）</label>
-              <input type="text" class="form-control" name="consequent_${i}" placeholder="例如: 2" required />
-              <small class="text-muted">單一索引</small>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label"><i class="bi bi-gear"></i> 規則類型</label>
-              <select class="form-select" name="rule_type_${i}" required>
-                <option value="complementary">🤝 互補品</option>
-                <option value="substitute">🔄 替代品</option>
-              </select>
-            </div>
-          </div>
-  
-          <div class="row" id="compFields_${i}">
-            <div class="col-md-6">
-              <label class="form-label"><i class="bi bi-percent"></i> Confidence (0~1)</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                max="1"
-                class="form-control"
-                name="confidence_${i}"
-                placeholder="0.6"
-                required
-              />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label"><i class="bi bi-bar-chart"></i> Support (0~1)</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                max="1"
-                class="form-control"
-                name="support_${i}"
-                placeholder="0.3"
-                required
-              />
-            </div>
-          </div>
-  
-          <div class="row" id="subFields_${i}" style="display: none;">
-            <div class="col-md-6">
-              <label class="form-label"><i class="bi bi-dice-3"></i> Probability (0~1)</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                max="1"
-                class="form-control"
-                name="probability_${i}"
-                placeholder="0.5"
-              />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label"><i class="bi bi-bar-chart"></i> Support (0~1)</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                max="1"
-                class="form-control"
-                name="support_${i}"
-                placeholder="0.3"
-              />
-            </div>
-          </div>
-        </div>`
-      );
-  
-      // 綁定切換不同規則型態 (互補 or 替代)
-      const sel = document.querySelector(`select[name="rule_type_${i}"]`);
-      sel.addEventListener("change", () => {
-        const comp = document.getElementById(`compFields_${i}`);
-        const sub = document.getElementById(`subFields_${i}`);
-        if (sel.value === "complementary") {
-          comp.style.display = "flex";
-          sub.style.display = "none";
-          comp.querySelectorAll("input").forEach((el) => {
-            el.disabled = false;
-            el.required = true;
-          });
-          sub.querySelectorAll("input").forEach((el) => {
-            el.disabled = true;
-            el.required = false;
-            el.value = "";
-          });
-        } else {
-          comp.style.display = "none";
-          sub.style.display = "flex";
-          sub.querySelectorAll("input").forEach((el) => {
-            el.disabled = false;
-            el.required = true;
-          });
-          comp.querySelectorAll("input").forEach((el) => {
-            el.disabled = true;
-            el.required = false;
-            el.value = "";
-          });
-        }
-      });
-      // 預設執行一次切換
-      sel.dispatchEvent(new Event("change"));
-    }
-  }
-  
-  /**
-   * 首次載入 → 先產出一次商品上下限欄位 
-   * 再開始輪詢 pollStatus()
-   */
-  window.onload = () => {
-    generateFields();
-    pollStatus();
-  };
-  
+}
+
+byId("method").addEventListener("change", updateStrategyHelp);
+byId("add-product").addEventListener("click", addProduct);
+byId("remove-product").addEventListener("click", () => {
+  const wrap = byId("product-fields");
+  if (wrap.children.length > 1) wrap.lastElementChild.remove();
+  byId("product-count").value = wrap.children.length;
+});
+byId("stop-button").addEventListener("click", async () => {
+  try {
+    const response = await fetch("/stop_training/", {method: "POST", headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value}});
+    if (!response.ok) throw new Error("Stop request failed");
+    byId("run-status").textContent = "Stopping…";
+  } catch (error) { byId("run-status").textContent = "Could not stop the run. Please retry."; }
+});
+new ResizeObserver(redrawCharts).observe(byId("chart-content"));
+updateStrategyHelp();
+poll();

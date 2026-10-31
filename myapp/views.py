@@ -1,179 +1,120 @@
-import os
+"""Django adapters for the shared research code and optional game API."""
 
-import requests
+import json
+
 from django.conf import settings
-from django.http import JsonResponse
-from django.shortcuts import render
+from django.http import FileResponse, Http404, JsonResponse
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from .sac_model import sac_component
-from .tasks import ASSOCIATION_RULES, TRAINING_STATUS_SAC, start_background_sac_training
+from experiments.baselines import METHODS
+from integrations.minecraft import MinecraftAPIError, MinecraftClient, sample_status
+from rl.config import MarketConfig, ProductConfig, SACConfig
+from .tasks import runner
 
 
+@require_http_methods(["GET", "POST"])
 def start_training_view(request):
-    plot_path = os.path.join(settings.BASE_DIR, "statics", "images", "sac_reward.png")
-    if os.path.exists(plot_path):
-        os.remove(plot_path)
-
-    message = None
+    error, status = None, 200
+    market = MarketConfig(max_steps=60, shock_step=30)
+    defaults = {"method": "sac", "episodes": 20, "max_steps": 60,
+                "num_players": 200, "seed": 0, "shock_step": 30}
+    previous = runner.snapshot()
+    if previous.get("configuration"):
+        configuration = previous["configuration"]
+        market = MarketConfig.from_dict(configuration["market"])
+        defaults = {"method": previous["method"], "episodes": configuration["sac"]["episodes"],
+                    "max_steps": market.max_steps, "num_players": market.num_players,
+                    "seed": configuration["seed"], "shock_step": market.shock_step or ""}
+    products = [p.__dict__ for p in market.products]
+    rules = json.dumps(list(market.association_rules))
     if request.method == "POST":
+        # Keep the submitted values even when parsing or validation fails.
+        defaults = {"method": request.POST.get("method", "sac"),
+                    "episodes": request.POST.get("episodes", "20"),
+                    "max_steps": request.POST.get("max_steps", "60"),
+                    "num_players": request.POST.get("num_players", "200"),
+                    "seed": request.POST.get("seed", "0"),
+                    "shock_step": request.POST.get("shock_step", "30")}
+        rules = request.POST.get("association_rules", "[]")
         try:
-            num_episodes = int(request.POST.get("num_episodes", 100))
-            max_steps = int(request.POST.get("max_steps", 50))
-            product_count = int(request.POST.get("product_count", 3))
-
-            new_buy_bounds = []
-            new_sell_bounds = []
-            for i in range(product_count):
-                buy_low = float(request.POST.get(f"buy_low_{i}"))
-                buy_high = float(request.POST.get(f"buy_high_{i}"))
-                sell_low = float(request.POST.get(f"sell_low_{i}"))
-                sell_high = float(request.POST.get(f"sell_high_{i}"))
-                new_buy_bounds.append((buy_low, buy_high))
-                new_sell_bounds.append((sell_low, sell_high))
-
-            sac_component.buy_price_bounds[:] = new_buy_bounds
-            sac_component.sell_price_bounds[:] = new_sell_bounds
-
-            ASSOCIATION_RULES.clear()
-            rules_count = int(request.POST.get("rules_count", 0))
-            for i in range(rules_count):
-                sup_list = request.POST.getlist(f"support_{i}")
-                conf_list = request.POST.getlist(f"confidence_{i}")
-                prob_list = request.POST.getlist(f"probability_{i}")
-
-                sup_str = next((value for value in sup_list if value.strip()), "")
-                conf_str = next((value for value in conf_list if value.strip()), "")
-                prob_str = next((value for value in prob_list if value.strip()), "")
-
-                antecedent = [
-                    value.strip()
-                    for value in request.POST.get(f"antecedent_{i}", "").split(",")
-                    if value.strip()
-                ]
-                consequent = request.POST.get(f"consequent_{i}", "").strip()
-                rule_type = request.POST.get(f"rule_type_{i}")
-
-                if sup_str == "":
-                    raise ValueError(f"Missing support value for rule {i + 1}.")
-
-                rule = {
-                    "antecedent": antecedent,
-                    "consequent": consequent,
-                    "type": rule_type,
-                    "support": float(sup_str),
-                }
-
-                if rule_type == "complementary":
-                    if conf_str == "":
-                        raise ValueError(f"Missing confidence value for rule {i + 1}.")
-                    rule["confidence"] = float(conf_str)
-                else:
-                    if prob_str == "":
-                        raise ValueError(f"Missing probability value for rule {i + 1}.")
-                    rule["probability"] = float(prob_str)
-
-                ASSOCIATION_RULES.append(rule)
-
-            start_background_sac_training(
-                num_episodes=num_episodes,
-                max_steps=max_steps,
-                product_count=product_count,
-                rules_list=ASSOCIATION_RULES,
-            )
-            message = "SAC training has started."
-        except Exception as exc:
-            message = f"Failed to start SAC training: {exc}"
-
-    return render(request, "new_training.html", {"message": message})
+            method = defaults["method"]
+            if method not in METHODS:
+                raise ValueError("Choose a supported pricing method")
+            count = int(request.POST.get("product_count", "3"))
+            if not 1 <= count <= 12:
+                raise ValueError("The web demo supports 1–12 products")
+            price_keys = ("buy_low", "buy_high", "sell_low", "sell_high")
+            products = [{"name": request.POST.get(f"name_{index}", f"Product {index + 1}"),
+                         **{key: request.POST.get(f"{key}_{index}", "") for key in price_keys}}
+                        for index in range(count)]
+            episodes = int(defaults["episodes"])
+            steps = int(defaults["max_steps"])
+            players = int(defaults["num_players"])
+            seed = int(defaults["seed"])
+            association_rules = json.loads(rules)
+            if not isinstance(association_rules, list) or len(association_rules) > 30:
+                raise ValueError("Association rules must be a JSON list with at most 30 entries")
+            shock = defaults["shock_step"].strip()
+            if not (1 <= episodes <= 200 and 1 <= steps <= 500 and episodes * steps <= 20_000):
+                raise ValueError("Use 1–200 episodes, 1–500 steps, and at most 20,000 total steps. Use the CLI for larger runs.")
+            if not 2 <= players <= 1000 or not 0 <= seed <= 2**31 - 1:
+                raise ValueError("Use 2–1,000 players and a seed between 0 and 2,147,483,647")
+            validated_products = tuple(ProductConfig(name=p["name"], **{key: float(p[key]) for key in price_keys})
+                                       for p in products)
+            market = MarketConfig(products=validated_products, num_players=players,
+                                  max_steps=steps, shock_step=int(shock) if shock else None,
+                                  association_rules=tuple(association_rules))
+            sac = SACConfig(episodes=episodes, hidden=64, batch_size=64, warmup_steps=min(100, max(0, episodes * steps // 4)))
+            if not runner.start(market, sac, seed, method, settings.DEMO_RUNS_DIR):
+                error, status = "A run is already active. Stop it or wait for completion.", 409
+            else:
+                return redirect("home")
+        except (ValueError, TypeError, KeyError, OverflowError) as exc:
+            error, status = str(exc), 400
+    return render(request, "new_training.html", {"defaults": defaults, "products": products,
+                                                "association_rules": rules, "error": error,
+                                                "methods": METHODS}, status=status)
 
 
+@require_GET
 def training_status_api(request):
-    response = JsonResponse(TRAINING_STATUS_SAC)
-    response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response = JsonResponse(runner.snapshot())
+    response["Cache-Control"] = "no-store"
     return response
 
 
+@require_POST
+def stop_training(request):
+    runner.cancel()
+    return JsonResponse({"message": "Stop requested"})
+
+
+@require_GET
+def training_artifact(request, run_id, name):
+    path = runner.artifact(run_id, name)
+    if path is None or not path.is_file():
+        raise Http404("Artifact is not available")
+    return FileResponse(path.open("rb"), as_attachment=True, filename=name)
+
+
+@require_GET
 def server_status_view(request):
-    market_api_url = "http://127.0.0.1:4567/api/market/status"
-    player_api_url = "http://127.0.0.1:4567/api/player/status"
-
-    market_data = []
-    player_data = {}
-    sell_prices = []
-    buy_prices = []
-    error_message = None
-
-    headers = {"ngrok-skip-browser-warning": "true"}
-
+    mode = settings.MINECRAFT_MODE
+    context = {"mode": mode, "error": None, "market": [], "players": {}}
     try:
-        market_resp = requests.get(market_api_url, headers=headers, timeout=5)
-        market_resp.raise_for_status()
-        raw_market = market_resp.json()
-
-        for item in raw_market:
-            new_item = {
-                "player": item.get("player", ""),
-                "type": item.get("type", ""),
-                "prices": item.get("prices", []),
-            }
-
-            product_list = []
-            for name, qty in item.get("products", {}).items():
-                display_name = name.replace("_", " ").title()
-                product_list.append((display_name, qty))
-            new_item["products"] = product_list
-
-            market_data.append(new_item)
-
-        if raw_market:
-            product_keys = list(raw_market[0].get("products", {}).keys())
+        if mode == "sample":
+            data = sample_status()
+        elif mode == "live":
+            data = MinecraftClient(settings.MINECRAFT_API_BASE_URL, settings.MINECRAFT_API_TIMEOUT).status()
         else:
-            product_keys = []
-
-        sell_entry = next((entry for entry in raw_market if entry.get("type") == "sell"), None)
-        buy_entry = next((entry for entry in raw_market if entry.get("type") == "buy"), None)
-
-        if sell_entry:
-            for idx, key in enumerate(product_keys):
-                display_name = key.replace("_", " ").title()
-                price_val = (
-                    sell_entry.get("prices", [])[idx]
-                    if idx < len(sell_entry.get("prices", []))
-                    else 0
-                )
-                sell_prices.append({"name": display_name, "price": price_val})
-
-        if buy_entry:
-            for idx, key in enumerate(product_keys):
-                display_name = key.replace("_", " ").title()
-                price_val = (
-                    buy_entry.get("prices", [])[idx]
-                    if idx < len(buy_entry.get("prices", []))
-                    else 0
-                )
-                buy_prices.append({"name": display_name, "price": price_val})
-
-        player_resp = requests.get(player_api_url, headers=headers, timeout=5)
-        player_resp.raise_for_status()
-        raw_player = player_resp.json()
-
-        player_data = {
-            "onlinePlayers": raw_player.get("onlinePlayers", 0),
-            "loggedInToday": raw_player.get("loggedInToday", 0),
-        }
-
-    except requests.Timeout:
-        error_message = "Request to the local market API timed out."
-    except ValueError as exc:
-        error_message = f"Failed to decode JSON response: {exc}"
-    except requests.RequestException as exc:
-        error_message = f"Failed to connect to the local market API: {exc}"
-
-    context = {
-        "market_data": market_data,
-        "player_data": player_data,
-        "sell_prices": sell_prices,
-        "buy_prices": buy_prices,
-        "error_message": error_message,
-    }
+            raise ValueError("MINECRAFT_MODE must be sample or live")
+        context["players"] = data["players"]
+        context["market"] = [
+            {"player": entry["player"], "type": entry["type"],
+             "products": [{"name": name.replace("_", " ").title(), "quantity": quantity, "price": price}
+                          for (name, quantity), price in zip(entry["products"].items(), entry["prices"])]}
+            for entry in data["market"]]
+    except (MinecraftAPIError, ValueError) as exc:
+        context["error"] = str(exc)
     return render(request, "server_status.html", context)

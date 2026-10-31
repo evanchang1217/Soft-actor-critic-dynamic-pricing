@@ -1,0 +1,19 @@
+{
+  "description": "Follow-up to the exploratory reference run. Tune simple baselines on validation seeds, report fresh test seeds, compare fixed-fee SAC and explicit market shifts. Legacy reward is unchanged.",
+  "market": {"num_players": 200, "max_steps": 100, "shock_step": 50, "shock_multiplier": 2.0},
+  "sac": {"episodes": 100, "hidden": 128, "batch_size": 128, "warmup_steps": 1000},
+  "training_seeds": [0, 1, 2, 3, 4],
+  "validation_seeds": [2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009],
+  "evaluation_seeds": [3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 3011, 3012, 3013, 3014, 3015, 3016, 3017, 3018, 3019],
+  "adaptive_gain": 0.5,
+  "adaptive_gains": [0.1, 0.25, 0.5, 1.0],
+  "target_buy_fractions": [0.5, 0.75, 1.0],
+  "target_sell_fractions": [0.0, 0.25, 0.5],
+  "scenarios": [
+    {"name": "nominal", "changes": {}},
+    {"name": "no_shock", "changes": {"shock_step": null}},
+    {"name": "early_shock", "changes": {"shock_step": 25}},
+    {"name": "late_shock", "changes": {"shock_step": 75}},
+    {"name": "higher_response", "changes": {"price_sensitivity_low": 0.9, "price_sensitivity_high": 1.5}}
+  ]
+}

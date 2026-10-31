@@ -1,7 +1,8 @@
-django>=4.0.0
-torch>=2.0.0
-numpy>=1.20.0
-gym>=0.21.0
-matplotlib>=3.5.0
-python-dotenv>=1.0.0
-requests>=2.31.0
+# Install the CPU wheel first on machines without CUDA; see README.md.
+Django>=5.2,<5.3
+torch>=2.6,<3
+numpy>=1.26,<3
+gymnasium>=1.0,<2
+matplotlib>=3.8,<3.11
+python-dotenv>=1.0,<2
+requests>=2.32,<3
