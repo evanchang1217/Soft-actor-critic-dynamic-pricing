@@ -1,0 +1,92 @@
+[
+  {
+    "method": "sac",
+    "training_seed": 0,
+    "input_path": "results/reevaluation/2026-10-28-reference/seed-0/policy.pt",
+    "stored_path": "models/sac/seed-0/policy.pt",
+    "sha256": "4561141fd5772569ea0e224fcf3716775bf8dc7fb9565c69abd8d0503f612cbb",
+    "trained_steps": 10000,
+    "control_fee": true
+  },
+  {
+    "method": "sac",
+    "training_seed": 1,
+    "input_path": "results/reevaluation/2026-10-28-reference/seed-1/policy.pt",
+    "stored_path": "models/sac/seed-1/policy.pt",
+    "sha256": "c1ea258b2d165622b6f6c7d56e784091c494f8d1461d0f92bd3a7782b50e925e",
+    "trained_steps": 10000,
+    "control_fee": true
+  },
+  {
+    "method": "sac",
+    "training_seed": 2,
+    "input_path": "results/reevaluation/2026-10-28-reference/seed-2/policy.pt",
+    "stored_path": "models/sac/seed-2/policy.pt",
+    "sha256": "c119205a528cc88f5a944fb0314ec3b9eae6022b0836978f487d8c8c128ba1bf",
+    "trained_steps": 10000,
+    "control_fee": true
+  },
+  {
+    "method": "sac",
+    "training_seed": 3,
+    "input_path": "results/reevaluation/2026-10-28-reference/seed-3/policy.pt",
+    "stored_path": "models/sac/seed-3/policy.pt",
+    "sha256": "2bb1ccabc21b6cfd9c9e021f65f39c0c488250566482e9d8d4980294fc1a81b5",
+    "trained_steps": 10000,
+    "control_fee": true
+  },
+  {
+    "method": "sac",
+    "training_seed": 4,
+    "input_path": "results/reevaluation/2026-10-28-reference/seed-4/policy.pt",
+    "stored_path": "models/sac/seed-4/policy.pt",
+    "sha256": "aee7c1d41a0a6bd00bf0c1af88d6348c6fe56883641cfa106768e36017a48111",
+    "trained_steps": 10000,
+    "control_fee": true
+  },
+  {
+    "method": "sac_fixed_fee",
+    "training_seed": 0,
+    "input_path": "runs/review-v2/models/sac_fixed_fee/seed-0/policy.pt",
+    "stored_path": "models/sac_fixed_fee/seed-0/policy.pt",
+    "sha256": "a7144a8058dcd74cdb7ff4674e1dfda5aafd2a5ad48404fae64603c1fc32b3fb",
+    "trained_steps": 10000,
+    "control_fee": false
+  },
+  {
+    "method": "sac_fixed_fee",
+    "training_seed": 1,
+    "input_path": "runs/review-v2/models/sac_fixed_fee/seed-1/policy.pt",
+    "stored_path": "models/sac_fixed_fee/seed-1/policy.pt",
+    "sha256": "503881d2d3360528358bd0cf13646c4b3e036a6d66cd5e8d78776fb072c57da7",
+    "trained_steps": 10000,
+    "control_fee": false
+  },
+  {
+    "method": "sac_fixed_fee",
+    "training_seed": 2,
+    "input_path": "runs/review-v2/models/sac_fixed_fee/seed-2/policy.pt",
+    "stored_path": "models/sac_fixed_fee/seed-2/policy.pt",
+    "sha256": "10998ececfc51f238931d176e8b1714d01526c93cc45e504cbe3c649cd69e55a",
+    "trained_steps": 10000,
+    "control_fee": false
+  },
+  {
+    "method": "sac_fixed_fee",
+    "training_seed": 3,
+    "input_path": "runs/review-v2/models/sac_fixed_fee/seed-3/policy.pt",
+    "stored_path": "models/sac_fixed_fee/seed-3/policy.pt",
+    "sha256": "144771c074379b270abba536caf1d35287ee054f2a259e4573fbceb1c452acc7",
+    "trained_steps": 10000,
+    "control_fee": false
+  },
+  {
+    "method": "sac_fixed_fee",
+    "training_seed": 4,
+    "input_path": "runs/review-v2/models/sac_fixed_fee/seed-4/policy.pt",
+    "stored_path": "models/sac_fixed_fee/seed-4/policy.pt",
+    "sha256": "8a60a8e2e3e4f9359213fce752aca06d3a91c2d00a5c30e612024468ab0825c9",
+    "trained_steps": 10000,
+    "control_fee": false
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "file": "steps.csv.gz",
+  "rows": 150000,
+  "uncompressed_sha256": "6a56f654d5c08d8e3a0e5d44efe3af4523f93a67462c5569073b0b60f312d1cf",
+  "compressed_sha256": "a0c2c5c2f62d292102b28ac9e0455c736af9d29e376bf5ef45deaa553441c67a"
+}

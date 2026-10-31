@@ -92,3 +92,9 @@ STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "statics"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# One process for the local demo. Use the CLI for research batches.
+DEMO_RUNS_DIR = BASE_DIR / "runs" / "demo"
+MINECRAFT_MODE = os.environ.get("MINECRAFT_MODE", "sample")
+MINECRAFT_API_BASE_URL = os.environ.get("MINECRAFT_API_BASE_URL", "http://127.0.0.1:4567")
+MINECRAFT_API_TIMEOUT = float(os.environ.get("MINECRAFT_API_TIMEOUT", "5"))

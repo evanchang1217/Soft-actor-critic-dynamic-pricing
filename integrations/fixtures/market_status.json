@@ -1,0 +1,8 @@
+{
+  "description": "Synthetic example only; not historical player records or live server data.",
+  "market": [
+    {"player": "NPC Shop", "type": "buy", "products": {"iron_ingot": 120, "gold_ingot": 45, "diamond": 12}, "prices": [15, 30, 60]},
+    {"player": "NPC Shop", "type": "sell", "products": {"iron_ingot": 80, "gold_ingot": 25, "diamond": 8}, "prices": [35, 70, 140]}
+  ],
+  "players": {"onlinePlayers": 12, "loggedInToday": 38}
+}

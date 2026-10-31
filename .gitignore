@@ -5,4 +5,12 @@ db.sqlite3
 .env
 .venv/
 venv/
-statics/images/sac_reward.png
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+staticfiles/
+runs/
+.coverage
+htmlcov/
+.DS_Store

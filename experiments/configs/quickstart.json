@@ -1,0 +1,17 @@
+{
+  "description": "Pipeline smoke run only: deliberately too short for scientific conclusions.",
+  "market": {
+    "num_players": 30,
+    "max_steps": 24,
+    "shock_step": 12,
+    "products": [
+      {"name": "Iron", "buy_low": 10, "buy_high": 20, "sell_low": 25, "sell_high": 50},
+      {"name": "Gold", "buy_low": 20, "buy_high": 40, "sell_low": 50, "sell_high": 100},
+      {"name": "Diamond", "buy_low": 40, "buy_high": 80, "sell_low": 100, "sell_high": 200}
+    ]
+  },
+  "sac": {"episodes": 4, "hidden": 32, "batch_size": 16, "warmup_steps": 16, "replay_size": 1000},
+  "training_seeds": [0, 1, 2],
+  "evaluation_seeds": [100, 101, 102, 103, 104],
+  "adaptive_gain": 0.5
+}

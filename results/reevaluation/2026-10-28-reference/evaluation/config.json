@@ -1,0 +1,114 @@
+{
+  "description": "Starting protocol for new evaluation, not the original poster configuration. Check convergence before drawing conclusions.",
+  "market": {
+    "products": [
+      {
+        "name": "Iron",
+        "buy_low": 10.0,
+        "buy_high": 20.0,
+        "sell_low": 25.0,
+        "sell_high": 50.0
+      },
+      {
+        "name": "Gold",
+        "buy_low": 20,
+        "buy_high": 40,
+        "sell_low": 50,
+        "sell_high": 100
+      },
+      {
+        "name": "Diamond",
+        "buy_low": 40,
+        "buy_high": 80,
+        "sell_low": 100,
+        "sell_high": 200
+      }
+    ],
+    "num_players": 200,
+    "avg_qty": 5.0,
+    "initial_gold": 1000.0,
+    "max_steps": 100,
+    "price_offset": 0.05,
+    "fee_offset": 0.01,
+    "fee_min": 0.01,
+    "fee_max": 0.2,
+    "initial_fee": 0.05,
+    "resource_noise": 0.2,
+    "shock_step": 50,
+    "shock_multiplier": 2.0,
+    "association_rules": [],
+    "reward_count": 1.0,
+    "reward_volume": 1.0,
+    "reward_cpi": 0.5,
+    "reward_money": 0.5
+  },
+  "sac": {
+    "episodes": 100,
+    "hidden": 128,
+    "batch_size": 128,
+    "replay_size": 100000,
+    "warmup_steps": 1000,
+    "gamma": 0.99,
+    "tau": 0.005,
+    "learning_rate": 0.0003,
+    "initial_alpha": 0.2
+  },
+  "training_seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "evaluation_seeds": [
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+  ],
+  "adaptive_gain": 0.5,
+  "methods": [
+    "fixed",
+    "random",
+    "adaptive",
+    "sac"
+  ],
+  "checkpoints": [
+    {
+      "path": "runs/reference-v1/seed-0/policy.pt",
+      "training_seed": 0,
+      "trained_steps": 10000,
+      "sha256": "4561141fd5772569ea0e224fcf3716775bf8dc7fb9565c69abd8d0503f612cbb"
+    },
+    {
+      "path": "runs/reference-v1/seed-1/policy.pt",
+      "training_seed": 1,
+      "trained_steps": 10000,
+      "sha256": "c1ea258b2d165622b6f6c7d56e784091c494f8d1461d0f92bd3a7782b50e925e"
+    },
+    {
+      "path": "runs/reference-v1/seed-2/policy.pt",
+      "training_seed": 2,
+      "trained_steps": 10000,
+      "sha256": "c119205a528cc88f5a944fb0314ec3b9eae6022b0836978f487d8c8c128ba1bf"
+    },
+    {
+      "path": "runs/reference-v1/seed-3/policy.pt",
+      "training_seed": 3,
+      "trained_steps": 10000,
+      "sha256": "2bb1ccabc21b6cfd9c9e021f65f39c0c488250566482e9d8d4980294fc1a81b5"
+    },
+    {
+      "path": "runs/reference-v1/seed-4/policy.pt",
+      "training_seed": 4,
+      "trained_steps": 10000,
+      "sha256": "aee7c1d41a0a6bd00bf0c1af88d6348c6fe56883641cfa106768e36017a48111"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+name: Tests and experiment smoke run
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12"]
+    env:
+      MPLBACKEND: Agg
+      MPLCONFIGDIR: /tmp/matplotlib
+      DEBUG: "True"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install the recorded CPU environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-lock.txt
+      - name: Verify the shared core imports without Django
+        run: python -c "import sys; import rl.training; assert 'django' not in sys.modules"
+      - name: Check Django configuration
+        run: python manage.py check
+      - name: Check browser script syntax
+        run: node --check statics/js/new_training.js
+      - name: Run tests
+        run: python -m pytest -q
+      - name: Run the complete four-strategy pipeline
+        run: python -m experiments.run --config experiments/configs/quickstart.json --out runs/ci
+      - name: Run baseline-selection and fee-ablation smoke pipeline
+        run: python -m experiments.review --config experiments/configs/review-smoke.json --out runs/review-ci
+      - name: Upload pipeline artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-results-python-${{ matrix.python }}
+          path: |
+            runs/ci
+            runs/review-ci

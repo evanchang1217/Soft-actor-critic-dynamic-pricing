@@ -4,15 +4,6 @@
 import os
 import sys
 
-try:
-    import pysqlite3
-except ImportError:
-    pysqlite3 = None
-else:
-    sys.modules["sqlite3"] = pysqlite3
-    sys.modules["sqlite3.dbapi2"] = pysqlite3
-
-
 def main():
     """Run administrative tasks."""
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")

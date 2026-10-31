@@ -1,0 +1,24 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore SAC and rule-based pricing in a simulated multiplayer game economy.">
+  <title>{% block title %}Market Pricing Lab{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/lab.css' %}">
+  {% block scripts %}{% endblock %}
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{% url 'home' %}"><span class="brand-mark" aria-hidden="true">↗</span> Market Pricing Lab</a>
+    <nav aria-label="Main navigation">
+      <a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' or request.resolver_match.url_name == 'start_training' %}aria-current="page"{% endif %}>Simulation</a>
+      <a href="{% url 'server_status' %}" {% if request.resolver_match.url_name == 'server_status' %}aria-current="page"{% endif %}>Minecraft API</a>
+      <a href="https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing">Repository ↗</a>
+    </nav>
+  </header>
+  <main class="page">{% block content %}{% endblock %}</main>
+  <footer class="footer">MMORPG dynamic pricing · Undergraduate capstone research · Simulation and system demonstration</footer>
+</body>
+</html>
