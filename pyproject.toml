@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mmorpg-sac-pricing"
+version = "0.2.0"
+description = "Simulation-based SAC pricing research, reproducible experiments, and a Django demo"
+requires-python = ">=3.10"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools.packages.find]
+include = ["rl*", "experiments*", "integrations*"]
+
+[tool.setuptools.package-data]
+experiments = ["configs/*.json"]
+integrations = ["fixtures/*.json"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "project.settings"
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-ra"

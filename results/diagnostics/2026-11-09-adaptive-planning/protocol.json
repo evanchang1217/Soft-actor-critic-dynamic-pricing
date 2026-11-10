@@ -1,0 +1,68 @@
+{
+  "calibration_size": 384,
+  "calibration_replicates": [
+    0,
+    1,
+    2
+  ],
+  "training_seeds": [
+    50,
+    51,
+    52
+  ],
+  "evaluation_seeds": [
+    226000010,
+    226000011,
+    226000012,
+    226000013
+  ],
+  "evaluation_steps": 384,
+  "early_window": 96,
+  "update_interval": 16,
+  "minimum_observations": 32,
+  "rolling_window": 64,
+  "minimum_identifying_points": 16,
+  "planner": {
+    "horizon": 12,
+    "particles": 8
+  },
+  "planner_supplement": {
+    "horizon": 12,
+    "particles": 64
+  },
+  "supplement_cases": [
+    "nominal",
+    "combined"
+  ],
+  "cases": {
+    "nominal": {
+      "base_slope": 5.0,
+      "reservation": 7.5,
+      "switch_probability": 0.06
+    },
+    "sensitive": {
+      "base_slope": 8.0,
+      "reservation": 7.5,
+      "switch_probability": 0.06
+    },
+    "reluctant": {
+      "base_slope": 5.0,
+      "reservation": 8.2,
+      "switch_probability": 0.06
+    },
+    "fast": {
+      "base_slope": 5.0,
+      "reservation": 7.5,
+      "switch_probability": 0.15
+    },
+    "combined": {
+      "base_slope": 8.0,
+      "reservation": 8.2,
+      "switch_probability": 0.15
+    }
+  },
+  "bootstrap_seed": 20261201,
+  "bootstrap_resamples": 5000,
+  "primary": "Combined-case later reward: online SAA8 minus frozen SAA8, crossed calibration/market bootstrap. Secondary: whether the same frozen SAC policies retain an advantage over online SAA8/SAA64.",
+  "scope": "Frozen prospective update schedule and identifiability gate, fresh market seeds. Reuse all larger-data parent SAC policies without retraining; online planners use only their own observed public transitions. No extra probing or hidden parameter access. Structural equations, other constants and noise law remain known. Parameters differ from calibration starting at period one and are fixed within each episode. No online SAC learning and no claim of within-episode law-change recovery."
+}

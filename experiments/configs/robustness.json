@@ -1,0 +1,32 @@
+{
+  "description": "Five-seed 30k confirmation, response-randomized training and validation-frozen currency/activity/price trade-offs. Exploratory follow-up informed by earlier studies.",
+  "base_config": "experiments/configs/balanced-control.json",
+  "reference_root": "results/reevaluation/2026-11-04-balanced-control",
+  "prior_budget_root": "results/diagnostics/2026-11-05-sac-feedback/budget-training",
+  "nominal_extension_root": "runs/robustness-nominal-extension-20261105",
+  "randomized_training_root": "runs/response-randomized-training-20261105",
+  "training_steps": 30000,
+  "training_seeds": [0, 1, 2, 3, 4],
+  "new_nominal_seeds": [3, 4],
+  "response_distribution": {"center_low": 0.8, "center_high": 1.2, "half_width": 0.3, "rng_offset": 9000000},
+  "validation_seeds": [1510010, 1510011, 1510012, 1510013, 1510014, 1510015, 1510016, 1510017, 1510018, 1510019, 1510020, 1510021, 1510022, 1510023, 1510024, 1510025, 1510026, 1510027, 1510028, 1510029],
+  "evaluation_seeds": [1530010, 1530011, 1530012, 1530013, 1530014, 1530015, 1530016, 1530017, 1530018, 1530019, 1530020, 1530021, 1530022, 1530023, 1530024, 1530025, 1530026, 1530027, 1530028, 1530029, 1530030, 1530031, 1530032, 1530033, 1530034, 1530035, 1530036, 1530037, 1530038, 1530039, 1530040, 1530041, 1530042, 1530043, 1530044, 1530045, 1530046, 1530047, 1530048, 1530049],
+  "validation_scenarios": [
+    {"name": "nominal", "changes": {}},
+    {"name": "higher_response", "changes": {"price_sensitivity_low": 0.9, "price_sensitivity_high": 1.5}},
+    {"name": "lower_response", "changes": {"price_sensitivity_low": 0.5, "price_sensitivity_high": 1.1}}
+  ],
+  "test_scenarios": [
+    {"name": "nominal", "changes": {}},
+    {"name": "higher_response", "changes": {"price_sensitivity_low": 0.9, "price_sensitivity_high": 1.5}},
+    {"name": "lower_response", "changes": {"price_sensitivity_low": 0.5, "price_sensitivity_high": 1.1}},
+    {"name": "resource_scarcity", "changes": {"shock_multiplier": 0.5}},
+    {"name": "unseen_higher_response", "changes": {"price_sensitivity_low": 1.1, "price_sensitivity_high": 1.7}},
+    {"name": "unseen_lower_response", "changes": {"price_sensitivity_low": 0.3, "price_sensitivity_high": 0.9}}
+  ],
+  "feedback_weights": [0.0, 0.125, 0.25, 0.5, 0.75, 1.0],
+  "currency_caps": [0.03, 0.05, 0.10],
+  "matching_tolerance": 0.005,
+  "bootstrap_seed": 20261105,
+  "bootstrap_resamples": 10000
+}

@@ -1,0 +1,13 @@
+{
+  "description": "Starting protocol for new evaluation, not the original poster configuration. Check convergence before drawing conclusions.",
+  "market": {
+    "num_players": 200,
+    "max_steps": 100,
+    "shock_step": 50,
+    "shock_multiplier": 2.0
+  },
+  "sac": {"episodes": 100, "hidden": 128, "batch_size": 128, "warmup_steps": 1000},
+  "training_seeds": [0, 1, 2, 3, 4],
+  "evaluation_seeds": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109],
+  "adaptive_gain": 0.5
+}

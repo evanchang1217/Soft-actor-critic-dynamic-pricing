@@ -1,0 +1,81 @@
+{
+  "calibration_replicates": [
+    0,
+    1,
+    2
+  ],
+  "calibration_sizes": [
+    48,
+    384
+  ],
+  "training_seeds": [
+    50,
+    51,
+    52
+  ],
+  "training_episodes": 256,
+  "training_steps_per_episode": 96,
+  "evaluation_steps": 384,
+  "early_window": 96,
+  "evaluation_seeds": [
+    224000010,
+    224000011,
+    224000012,
+    224000013
+  ],
+  "cases": {
+    "nominal": {
+      "base_slope": 5.0,
+      "reservation": 7.5,
+      "switch_probability": 0.06
+    },
+    "sensitive": {
+      "base_slope": 8.0,
+      "reservation": 7.5,
+      "switch_probability": 0.06
+    },
+    "reluctant": {
+      "base_slope": 5.0,
+      "reservation": 8.2,
+      "switch_probability": 0.06
+    },
+    "fast": {
+      "base_slope": 5.0,
+      "reservation": 7.5,
+      "switch_probability": 0.15
+    },
+    "combined": {
+      "base_slope": 8.0,
+      "reservation": 8.2,
+      "switch_probability": 0.15
+    }
+  },
+  "planner": {
+    "horizon": 12,
+    "particles": 8
+  },
+  "planner_supplement": {
+    "horizon": 12,
+    "particles": 64
+  },
+  "pi": {
+    "gain": 3.0,
+    "stock_gain": 0.0,
+    "integral_gain": 0.06
+  },
+  "sac": {
+    "hidden": 64,
+    "batch_size": 128,
+    "replay_size": 50000,
+    "warmup_steps": 512,
+    "learning_rate": 0.0003,
+    "gamma": 0.97,
+    "tau": 0.005,
+    "initial_alpha": 0.05,
+    "control_fee": true
+  },
+  "bootstrap_seed": 20261129,
+  "bootstrap_resamples": 5000,
+  "primary": "At calibration size 384, fitted-simulator SAC minus fitted-model SAA8 later-window nominal reward; cross calibration replicate, training seed and evaluation market. Exploratory with only three independent calibration replicates.",
+  "scope": "Both use identical public transition logs and the identical fitted simulator. SAC receives additional synthetic interactions, whose count is reported. Only slope, reservation and switch probability are estimated; structural equations, other parameters, reward and noise law are shared correct prior knowledge. Frozen policies/models at deployment; no online refitting. Cases change parameters from the first test period, not within-episode drift. Strong SAA64 supplement is predeclared for nominal and combined at the larger calibration size. No claimed inherent RL robustness."
+}

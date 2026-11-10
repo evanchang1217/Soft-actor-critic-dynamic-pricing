@@ -1,0 +1,16 @@
+{
+  "description": "Software smoke test only; not performance evidence.",
+  "market": {"num_players": 8, "max_steps": 4, "shock_step": 2, "reward_mode": "balanced_v1", "reward_count": 0.5, "reward_volume": 0.5, "reward_cpi": 0.05, "reward_money": 1.0},
+  "sac": {"episodes": 2, "hidden": 16, "batch_size": 4, "warmup_steps": 4, "replay_size": 32, "control_fee": false},
+  "training_seeds": [0, 1],
+  "validation_seeds": [71200, 71201],
+  "evaluation_seeds": [73200, 73201],
+  "adaptive_gains": [0.5],
+  "adaptive_magnitudes": [0.01, 0.05],
+  "target_buy_fractions": [0.5, 0.75],
+  "target_sell_fractions": [0.0],
+  "currency_gains": [0.5, 1.0],
+  "scenarios": [{"name": "nominal", "changes": {}}, {"name": "resource_scarcity", "changes": {"shock_multiplier": 0.5}}],
+  "bootstrap_seed": 20261104,
+  "bootstrap_resamples": 100
+}

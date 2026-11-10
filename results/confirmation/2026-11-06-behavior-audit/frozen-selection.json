@@ -1,0 +1,108 @@
+{
+  "choices": {
+    "original": {
+      "feedback": {
+        "method": "feedback_18",
+        "kind": "feedback",
+        "parameters": {
+          "buy_fraction": 0.75,
+          "sell_fraction": 0.25,
+          "gain": 1.0
+        }
+      },
+      "pi": {
+        "method": "pi_49",
+        "kind": "pi",
+        "parameters": {
+          "buy_fraction": 0.75,
+          "sell_fraction": 0.0,
+          "gain": 0.5,
+          "integral_gain": 0.05
+        }
+      }
+    },
+    "separated": {
+      "feedback": {
+        "method": "feedback_18",
+        "kind": "feedback",
+        "parameters": {
+          "buy_fraction": 0.75,
+          "sell_fraction": 0.25,
+          "gain": 1.0
+        }
+      },
+      "pi": {
+        "method": "pi_53",
+        "kind": "pi",
+        "parameters": {
+          "buy_fraction": 0.75,
+          "sell_fraction": 0.25,
+          "gain": 0.5,
+          "integral_gain": 0.05
+        }
+      }
+    },
+    "inventory": {
+      "feedback": {
+        "method": "feedback_15",
+        "kind": "feedback",
+        "parameters": {
+          "buy_fraction": 0.75,
+          "sell_fraction": 0.0,
+          "gain": 2.0
+        }
+      },
+      "pi": {
+        "method": "pi_51",
+        "kind": "pi",
+        "parameters": {
+          "buy_fraction": 0.75,
+          "sell_fraction": 0.0,
+          "gain": 1.0,
+          "integral_gain": 0.05
+        }
+      }
+    },
+    "combined": {
+      "feedback": {
+        "method": "feedback_3",
+        "kind": "feedback",
+        "parameters": {
+          "buy_fraction": 0.5,
+          "sell_fraction": 0.0,
+          "gain": 2.0
+        }
+      },
+      "pi": {
+        "method": "pi_39",
+        "kind": "pi",
+        "parameters": {
+          "buy_fraction": 0.5,
+          "sell_fraction": 0.0,
+          "gain": 1.0,
+          "integral_gain": 0.05
+        }
+      }
+    }
+  },
+  "test_episodes_seen": 0,
+  "validation_sha256": "b31b467ae03acd43ec799b697769ff8ef6f036b45c7b3f169d2411150a47d7fe",
+  "protocol_sha256": "9d65e5fbef490fcaf775c8e2e2aaa511db8bd5e2012205512db4d0adc46c555f",
+  "manifest": {
+    "kind": "behavior-audit-frozen-validation",
+    "created_at_utc": "2026-11-06T15:27:39.427630+00:00",
+    "python": "3.10.12",
+    "platform": "Linux-6.5.0-45-generic-x86_64-with-glibc2.35",
+    "packages": {
+      "torch": "2.6.0+cpu",
+      "numpy": "2.2.6",
+      "gymnasium": "1.4.0",
+      "matplotlib": "3.10.9",
+      "Django": "5.2.18",
+      "requests": "2.34.2"
+    },
+    "git_commit": "dc6824e407121a83dbaacbaaa7b61d4fcdda97a7",
+    "git_dirty": true,
+    "python_source_sha256": "96b5315ac1f83270a9922d67ac12b513f67cca7da2404ae3b561fdce7e079f21"
+  }
+}

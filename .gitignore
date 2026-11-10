@@ -1,8 +1,40 @@
+# Python environments, caches and build products
 __pycache__/
 *.py[cod]
-*.sqlite3
-db.sqlite3
-.env
 .venv/
 venv/
-statics/images/sac_reward.png
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+*.egg-info/
+/build/
+/dist/
+.ipynb_checkpoints/
+
+# Local configuration and Django runtime files; keep the setup example
+.env
+.env.*
+!.env.example
+*.sqlite3
+*.sqlite3-*
+/staticfiles/
+
+# Working runs and restored full evidence belong here; results/ keeps summaries
+/runs/
+
+# Avoid re-adding the reconstructible full trace; its byte parts are archived.
+/results/confirmation/2026-11-09-stationary-retraining/steps.csv.gz
+# Detailed evidence is restored under runs/ from the separately stored archive.
+/results/confirmation/2026-11-05-robustness/summary.json
+/results/diagnostics/2026-11-09-compute-tradeoff/common-states.json
+/results/diagnostics/2026-11-09-compute-tradeoff/decision-samples.csv
+/results/diagnostics/2026-11-09-compute-tradeoff/observation-samples.csv
+
+# Test reports and operating-system metadata
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.DS_Store

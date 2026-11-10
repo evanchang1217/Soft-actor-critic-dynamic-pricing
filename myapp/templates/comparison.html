@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Saved controller comparison · Market Pricing Lab{% endblock %}
+{% block scripts %}
+<link rel="stylesheet" href="{% static 'css/comparison.css' %}">
+<script src="{% static 'js/comparison.js' %}" defer></script>
+{% endblock %}
+{% block content %}
+<section class="compare-intro">
+  <p class="eyebrow">SAVED MODELS / CONTROL COMPARISON</p>
+  <h1>One market. Three controllers.</h1>
+  <p>Load a trained SAC policy and compare it with tuned P and PI feedback on the same simulated market. No training required.</p>
+</section>
+<form id="comparison-form" class="compare-controls" action="{% url 'comparison_api' %}">
+  <label>Market scenario<select id="scenario" name="scenario">{% for item in options.scenarios %}<option value="{{ item.value }}">{{ item.label }}</option>{% endfor %}</select></label>
+  <label>Market seed<select id="market-seed" name="market">{% for seed in options.markets %}<option value="{{ seed }}">{{ seed }}</option>{% endfor %}</select></label>
+  <label>SAC model seed<select id="model-seed" name="model">{% for seed in options.models %}<option value="{{ seed }}">{{ seed }}</option>{% endfor %}</select></label>
+  <button id="load-comparison" type="submit">Load comparison</button>
+</form>
+<p id="comparison-status" role="status" aria-live="polite">Choose a scenario and load its saved controllers.</p>
+<div id="comparison-results" hidden>
+  <div class="compare-heading"><div><p class="eyebrow">ACTIVE COMPARISON</p><h2 id="active-comparison"></h2><p id="active-seeds"></p></div>
+    <div class="legend"><span class="sac">● SAC</span><span class="p">● P</span><span class="pi">● PI</span></div>
+  </div>
+  <p id="comparison-context">Single-market illustration. The table below also reports the saved study averages.</p>
+  <div class="playback">
+    <button id="play" type="button">Play</button><button id="restart" type="button">Restart</button>
+    <label for="playhead">Step <output id="step-value">1</output></label>
+    <input type="range" id="playhead" min="1" max="100" value="1">
+    <label>Speed<select id="speed"><option value="10">10 steps/s</option><option value="50" selected>50 steps/s</option><option value="200">200 steps/s</option></select></label>
+  </div>
+  <div class="comparison-charts">
+    <section class="compare-panel"><h3>Total player gold / initial gold</h3><canvas id="gold-chart" role="img" aria-label="Player currency trajectories for SAC, P and PI"></canvas></section>
+    <section class="compare-panel"><h3>Traded units per step</h3><canvas id="volume-chart" role="img" aria-label="Trading volume trajectories"></canvas></section>
+    <section class="compare-panel"><h3>Players below 20% initial gold (%)</h3><canvas id="low-chart" role="img" aria-label="Low balance fraction trajectories"></canvas></section>
+    <section class="compare-panel"><h3>Absolute currency error (%)</h3><canvas id="error-chart" role="img" aria-label="Currency tracking error trajectories"></canvas></section>
+  </div>
+  <div class="compare-heading"><h2>Both sides of the price</h2><label>Product<select id="price-product"></select></label></div>
+  <div class="comparison-charts">
+    <section class="compare-panel"><h3>Shop buy price · paid to players</h3><canvas id="buy-chart" role="img" aria-label="Per-product shop buy prices"></canvas></section>
+    <section class="compare-panel"><h3>Shop sell price · charged to players</h3><canvas id="sell-chart" role="img" aria-label="Per-product shop sell prices"></canvas></section>
+  </div>
+  <section class="compare-panel">
+    <h2>Episode outcomes</h2><p>Complete-episode metrics; these do not change when you scrub playback.</p>
+    <div class="comparison-table"><table><thead><tr><th>Controller / evidence</th><th>Score / step ↑</th><th>Mean currency error</th><th>Peak currency error</th><th>Units / step</th><th>Mean low-gold players</th></tr></thead><tbody id="comparison-metrics"></tbody></table></div>
+    <p id="batch-note"></p>
+  </section>
+  <div class="compare-downloads"><button id="download-csv" type="button">Download trajectories CSV</button><button id="download-json" type="button">Download comparison JSON</button></div>
+  <details class="compare-panel"><summary>Model and experiment details</summary><p id="record-details"></p><pre id="model-details"></pre></details>
+</div>
+{% endblock %}

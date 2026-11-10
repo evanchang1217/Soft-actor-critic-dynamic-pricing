@@ -1,10 +1,14 @@
 from django.urls import path
 
-from . import views
+from . import views, comparison_views
 
 urlpatterns = [
+    path("comparison/", comparison_views.comparison_view, name="comparison"),
+    path("comparison/api/", comparison_views.comparison_api, name="comparison_api"),
     path("", views.start_training_view, name="home"),
     path("start_training/", views.start_training_view, name="start_training"),
     path("training_status_api/", views.training_status_api, name="training_status_api"),
     path("server_status/", views.server_status_view, name="server_status"),
+    path("stop_training/", views.stop_training, name="stop_training"),
+    path("artifacts/<str:run_id>/<str:name>/", views.training_artifact, name="training_artifact"),
 ]

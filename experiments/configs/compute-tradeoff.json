@@ -1,0 +1,32 @@
+{
+  "calibration_size": 384,
+  "calibration_replicates": [0, 1, 2],
+  "training_seeds": [50, 51, 52],
+  "evaluation_seeds": [228000010, 228000011, 228000012, 228000013],
+  "evaluation_steps": 384,
+  "early_window": 96,
+  "update_interval": 16,
+  "minimum_observations": 32,
+  "rolling_window": 64,
+  "minimum_identifying_points": 16,
+  "supplement_cases": [],
+  "planners": [
+    {"method": "h1_f2", "horizon": 1, "particles": 2},
+    {"method": "h4_f2", "horizon": 4, "particles": 2},
+    {"method": "h4_f8", "horizon": 4, "particles": 8},
+    {"method": "h12_f2", "horizon": 12, "particles": 2},
+    {"method": "h12_f8", "horizon": 12, "particles": 8},
+    {"method": "h12_f64", "horizon": 12, "particles": 64}
+  ],
+  "cases": {
+    "nominal": {"base_slope": 5.0, "reservation": 7.5, "switch_probability": 0.06},
+    "combined": {"base_slope": 8.0, "reservation": 8.2, "switch_probability": 0.15}
+  },
+  "audit_markets": [229000010, 229000011],
+  "audit_steps": [48, 49, 144, 145, 288, 289],
+  "timing_repetitions": 3,
+  "training_replays": [{"replicate": 0, "seed": 50}, {"replicate": 1, "seed": 51}, {"replicate": 2, "seed": 52}],
+  "bootstrap_seed": 20261203,
+  "bootstrap_resamples": 5000,
+  "scope": "Prospective descriptive quality/CPU frontier, not an outcome-selected winner or equivalence test. Same inherited nine SAC policies and online estimator; six frozen horizon/scenario budgets, two cases and fresh paired markets. Common PI-visited states/history benchmark decision and observation/refit costs with one Torch thread. Three exact-setting training replays estimate offline cost because historical timing was not recorded. CPU break-even ignores economic quality and is conditional on deployment acceptance; no guarantee of practical need or universal RL superiority."
+}
