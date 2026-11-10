@@ -20,6 +20,12 @@
         {% for method in methods %}<option value="{{ method }}" {% if defaults.method == method %}selected{% endif %}>{{ method|upper }}</option>{% endfor %}
       </select>
       <p id="strategy-help" class="help"></p>
+      <label for="reward-mode">Reward objective</label>
+      <select id="reward-mode" name="reward_mode" aria-describedby="reward-help">
+        <option value="balanced_v1" {% if defaults.reward_mode == 'balanced_v1' %}selected{% endif %}>Balanced currency + trade (recommended)</option>
+        <option value="legacy" {% if defaults.reward_mode == 'legacy' %}selected{% endif %}>Legacy trade-target reward</option>
+      </select>
+      <p id="reward-help" class="help">Balanced reward targets trading activity and deviation from the initial total player gold. All strategies keep a fixed 5% fee.</p>
       <div class="field-grid">
         <div><label for="episodes">Episodes</label><input id="episodes" name="episodes" type="number" value="{{ defaults.episodes }}" min="1" max="200" required></div>
         <div><label for="seed">Random seed</label><input id="seed" name="seed" type="number" value="{{ defaults.seed }}" min="0" max="2147483647" required></div>
@@ -56,21 +62,25 @@
         <p class="help">Zero-based product indices. Example: <code>[{"antecedent":[0],"consequent":1,"type":"complementary","confidence":0.7}]</code>. These are manually configured relationships.</p>
       </details>
       <button type="submit" id="start-button" class="button primary">Start run <span aria-hidden="true">↗</span></button>
-      <p class="help">Up to 20,000 steps per web run. Short runs demonstrate behavior; use the experiment CLI for controlled comparisons.</p>
+      <p class="help">The default SAC run trains for 10,000 steps using the reward-ablation study's settings. The extended 30,000-step comparison and SAC/feedback blend are available through the experiment CLI. Return scales differ across objectives; compare gold and traded units alongside return.</p>
+      <p class="help">Up to 20,000 steps per web run. Use the experiment CLI for frozen-policy, held-out comparisons.</p>
     </form>
   </aside>
   <section class="results" aria-label="Run results">
     <div class="run-strip"><div><span id="state-pill" class="pill">READY</span> <span id="run-status" role="status">Ready to run</span></div><button type="button" class="button secondary small" id="stop-button" hidden>Stop run</button></div>
+    <p id="active-objective" class="help" aria-live="polite">No run selected yet. Run settings will appear here.</p>
     <div class="metric-grid">
       <div class="metric"><span>Episodes</span><strong id="metric-episodes">—</strong><small>completed / configured</small></div>
       <div class="metric"><span>Episode return</span><strong id="metric-return">—</strong><small>latest completed episode</small></div>
       <div class="metric"><span>Shop price index</span><strong id="metric-cpi">—</strong><small>episode mean · lower-bound base</small></div>
       <div class="metric"><span>Gold / player</span><strong id="metric-gold">—</strong><small>end of episode</small></div>
+      <div class="metric"><span>Final gold deviation</span><strong id="metric-deviation">—</strong><small>absolute distance from initial total</small></div>
+      <div class="metric"><span>Units traded</span><strong id="metric-volume">—</strong><small>latest completed episode</small></div>
     </div>
     <div class="panel chart-panel">
       <div class="panel-heading"><div><h2>Learning &amp; market behavior</h2><p class="help">Each point is a completed episode. Baseline strategies do not learn across episodes.</p></div><span class="section-number">02</span></div>
       <div id="chart-empty" class="empty-state"><span aria-hidden="true">⌁</span><h3>Your next experiment starts here.</h3><p>Run a strategy to see reward and price trajectories.</p></div>
-      <div id="chart-content" hidden><h3 class="chart-label">Episode return</h3><canvas id="return-chart" role="img" aria-label="Episode return over training episodes"></canvas><h3 class="chart-label">Mean shop price index</h3><canvas id="cpi-chart" role="img" aria-label="Mean shop price index over episodes"></canvas></div>
+      <div id="chart-content" hidden><h3 class="chart-label" id="return-chart-label">Episode return</h3><canvas id="return-chart" role="img" aria-label="Episode return over training episodes"></canvas><h3 class="chart-label">Final gold deviation (%)</h3><canvas id="deviation-chart" role="img" aria-label="Final gold deviation over episodes"></canvas><h3 class="chart-label">Mean shop price index</h3><canvas id="cpi-chart" role="img" aria-label="Mean shop price index over episodes"></canvas></div>
     </div>
     <div class="panel">
       <div class="panel-heading"><h2>Latest market snapshot</h2><span class="section-number">03</span></div>
@@ -83,7 +93,7 @@
       <p class="help">Download the latest completed run's configuration, episode log, and SAC model. Files also remain in the local runs directory.</p>
       <div id="artifact-links" class="artifact-links"><span class="muted">Available when the run finishes.</span></div>
     </div>
-    <div class="notice"><strong>Reading the results.</strong> The price index tracks prices controlled by the strategy. Consider player gold and trading activity alongside it. A single demo run does not establish which strategy performs best.</div>
+    <div class="notice"><strong>Reading the results.</strong> Final gold deviation measures the end of each episode; the research table reports mean deviation across all market steps. SAC charts show training episodes, while the published comparison evaluates frozen policies on held-out markets. A single demo run does not establish which strategy performs best.</div>
   </section>
 </div>
 {% endblock %}

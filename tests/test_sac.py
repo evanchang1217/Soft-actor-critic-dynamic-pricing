@@ -70,3 +70,25 @@ def test_cancellation_produces_explicit_partial_outcome(tmp_path):
     assert result["cancelled"]
     assert result["steps"] == 0
     assert not result["history"]
+
+
+def test_fixed_fee_sac_removes_the_dimension_and_trains_with_zero_fee_actions(tmp_path):
+    market = MarketConfig(num_players=8, max_steps=6, shock_step=3)
+    config = SACConfig(control_fee=False, episodes=2, hidden=16, batch_size=4, warmup_steps=4, replay_size=30)
+    fees = []
+    result = train(market, config, 0, tmp_path / "model", callback=lambda row, info: fees.append(info["fee_rate"]))
+    assert result["updates"] > 0
+    assert fees == pytest.approx([market.initial_fee] * config.episodes, abs=1e-8)
+    env = MultiStoreEnv(market)
+    observation, _ = env.reset(seed=10)
+    agent, metadata = SACAgent.load(tmp_path / "model/policy.pt", env)
+    assert agent.action_dim == 2 * env.n
+    assert agent.target_entropy == -2 * env.n
+    assert metadata["sac"]["control_fee"] is False
+    for _ in range(market.max_steps):
+        action = agent.act(observation)
+        assert action[-1] == 0
+        observation, *_ = env.step(action)
+        assert env.fee_rate == pytest.approx(market.initial_fee, abs=1e-8)
+    for row in result["history"]:
+        assert row["updates"] >= 0

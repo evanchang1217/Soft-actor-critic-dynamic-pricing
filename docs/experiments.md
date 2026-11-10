@@ -1,101 +1,141 @@
-# Running and interpreting experiments
+# Experiments and reproduction
 
-All commands run from the repository root after installing dependencies. No Django settings or web server are required. Runs are CPU-only by default and output directories must be new, so older evidence is never silently overwritten.
+Install dependencies from the [README](../README.md). All new outputs belong
+under ignored `runs/`. Keep original-market and aggregate-market rewards separate.
+[Methods](methodology.md) · [Fixed study designs](protocols.md).
 
-This page documents the original four-method maintenance pipeline. For the stronger comparison with validation-tuned simple rules, fixed-fee SAC, fresh test markets, reward auditing, and explicit market shifts, use [the follow-up protocol](review-protocol.md).
+## Verify saved studies
 
-## Complete comparison
-
-```bash
-# A short pipeline check: 3 training seeds, 4 episodes each, 5 held-out markets.
-python -m experiments.run --config experiments/configs/quickstart.json --out runs/quickstart
-
-# A larger starting protocol: 5 training seeds, 100 episodes each, 10 held-out markets.
-python -m experiments.run --config experiments/configs/default.json --out runs/default
-```
-
-The quickstart is intentionally too short to establish learning performance. The larger protocol is a starting configuration, not a guarantee of convergence or the original experiment settings. Inspect training curves and repeat with a sufficient budget before drawing conclusions.
-
-The suite trains independent SAC policies and evaluates their deterministic mean actions on held-out markets. Fixed/random/adaptive policies are evaluated once per held-out market, rather than duplicating their observations for every SAC training seed. Evaluation never updates policy weights or normalization.
-
-## Separate training, evaluation, and plotting
+One command selects the corresponding frozen source and saved evidence:
 
 ```bash
-python -m experiments.train --config experiments/configs/default.json --seed 0 --out runs/model-0
-
-python -m experiments.evaluate --config experiments/configs/default.json \
-  --checkpoints runs/model-0/policy.pt --out runs/evaluation-0
-
-# Run only inexpensive baselines, with no trained checkpoint.
-python -m experiments.evaluate --config experiments/configs/default.json \
-  --methods fixed random adaptive --out runs/baselines
-
-# Rebuild the exact figures from saved step CSVs; no model or training needed.
-python -m experiments.plot_results runs/evaluation-0
+python scripts/reproduce.py --study main
+python scripts/reproduce.py --study compute --workers 4
 ```
 
-Pass multiple model paths after `--checkpoints` to compare several SAC training seeds. Checkpoint market configuration must match the evaluation configuration, including horizon and shock settings. To study distribution shifts, introduce an explicit protocol change rather than silently evaluating a mismatched model.
-
-Models are only pooled when they share the same fee-control mode, SAC training settings, training-step budget, and known update count. A price-only model is labeled `sac_fixed_fee` in results and figures; do not mix it with fee-controlling SAC in this four-method entry point. Use `experiments.review` to compare those variants explicitly. Per-checkpoint settings, update counts, and verification sources are saved in the evaluation configuration.
-
-New checkpoints record the actual number of gradient updates. Evaluation rejects known zero-update models: interacting with the market does not by itself train the policy. Older checkpoints lack that field; keep their matching `outcome.json` alongside `policy.pt` so the update count can be verified. If an older checkpoint has no update evidence, it is rejected unless `--allow-unverified-checkpoint` is explicitly supplied; that choice produces a warning and marks the model unverified in the results. This override never accepts a checkpoint known to have zero updates.
-
-## Baseline definitions
-
-These are new, readable baselines inspired by the project problem. The poster's exact Random/Adaptive implementations were not recovered.
-
-| Method | Decision at each market step |
+| `--study` | Evidence |
 | --- | --- |
-| Fixed | Zero action; hold each episode's initial sampled prices and fee |
-| Random | Independently uniform actions within each dimension's declared bounds; policy RNG is separate from the market RNG |
-| Adaptive | After the first step, use previous directional participation: `buy_delta = -gain*price_offset*(sellers-N/2)/(N/2)` and `sell_delta = gain*price_offset*(buyers-N/2)/(N/2)`, clipped to action bounds; hold fee fixed |
-| SAC | Deterministic mean of the trained tanh-Gaussian policy, scaled per dimension; controls prices and fee |
+| `objective` | Equal-budget reward ablation |
+| `main` | Five-seed original-market robustness |
+| `behavior` | Behavioral assumptions and persistent markets |
+| `mechanism` | Independent consumption and satiation |
+| `stationary` | Representation retraining and transfer |
+| `model-error` | Shared-data estimation and frozen transfer |
+| `adaptive` | Periodic online refitting |
+| `compute` | Control quality and CPU costs |
 
-`adaptive_gain` defaults to `0.5` and is recorded in the protocol. Adaptive does not have the same fee-control flexibility as SAC/random; this comparison alone cannot isolate whether gains come from learned pricing or fee control. The separate [follow-up protocol](review-protocol.md) implements a genuinely price-only SAC model and tuned simple controls to examine that limitation.
+Use `--record` for another complete record, `--archive` for an explicit evidence
+bundle and `--out` for a fresh verification-output directory where applicable.
+Original-market selected verification replays 66 episodes; behavior/mechanism
+replay 72/28. `--study main --mode replay --out runs/full-main-replay` is a
+separate complete test replay. Aggregate verifiers reconstruct declared tables,
+check hashes and replay fixed subsets. Timings are checked as stored measurements,
+not expected to reproduce identical noisy values. No verifier retrains SAC.
 
-## Seeds and comparable conditions
+Source/model/data checksums and stored-table reconstruction are distinct from
+numerical replay. PyTorch does not guarantee identical results across platforms
+([reproducibility notes](https://docs.pytorch.org/docs/stable/notes/randomness.html)).
+Small inference differences can change discrete trades, so strict historical
+replay may require the original numerical environment. CI checks current demo
+behavior against the source-verified evaluator on the same platform, while
+retaining exact source/model and saved-result checks.
 
-`training_seeds` control network initialization and independent replay/exploration streams. Training episode `e` resets the market with `seed + 10000*e` (one-based episodes). Every policy is evaluated on the same `evaluation_seeds`, with the same horizon, initial distributions, resource shock, and reward.
+## Full evidence archive
 
-Protocol validation rejects evaluation seeds used in training. Checkpoint metadata is checked as well. Resource randomness is separate from policy and trading randomness. Same-seed initial markets and resource paths match across methods; policy-dependent trade draws are not guaranteed to be common-random-number paired.
+An archive is a compressed, byte-preserved copy of the source, parameters, models
+and data behind the saved results. The checkout keeps summaries, figures and ten
+policies needed by the demo. Full evidence is in
+**sac-pricing-evidence-2026-11-10.tar.gz**, with the complete inventory and SHA-256
+in [archive-manifest.json](../results/archive-manifest.json).
 
-Evaluation seeds are for reporting. If you tune hyperparameters against them, reserve a separate final test set before making performance claims.
+**Availability:** the archive exists locally outside the repo; no public download
+has been published. The demo and core tests work from a clean clone. Full study
+verification requires obtaining the archive from the project owner.
+Detailed per-run results, audit inputs, and compute-study state and timing
+samples are in the archive; checkout result summaries, figures and demo inputs
+remain available. Start with the [result guides](../results/README.md).
 
-## Artifacts
-
-```text
-runs/example/
-  config.json              # Fully resolved protocol
-  manifest.json            # Timestamp, versions, Git revision/dirty state, source digest
-  training.png             # Across-seed learning curves
-  seed-0/
-    config.json
-    manifest.json
-    training.csv           # Per-episode returns, market metrics, update counts/losses
-    outcome.json
-    policy.pt              # Inference weights and compatible environment settings
-  seed-1/ ...
-  evaluation/
-    config.json            # Methods and input checkpoint hashes
-    manifest.json
-    episodes.csv           # One held-out rollout per row
-    steps.csv              # Every market step, including all reward components
-    summary.csv
-    summary.json
-    comparison.png
-    comparison.svg
+```bash
+export SAC_RESEARCH_ARCHIVE=/path/to/sac-pricing-evidence-2026-11-10.tar.gz
+python scripts/research_archive.py verify
+python scripts/research_archive.py restore --out runs/evidence
 ```
 
-`manifest.json` fingerprints Python source files as well as the Git state, so an uncommitted checkout is not falsely described as an exact clean revision. Keep the source checkout and its configuration with a published run. Generated `runs/` directories are ignored by Git; intentionally publish selected artifacts under `results/` with a provenance note.
+The tools also find the named archive in `../research-archives/` in the owner's
+workspace. The manifest contains no absolute machine-specific path. Verification
+checks the archive checksum and each extracted file's size/hash, rejects unsafe
+paths or links, and uses a temporary copy. Stationary trace byte parts reconstruct
+the exact full compressed trace when needed. Frozen originals are verified even
+when checkout Markdown links have been simplified.
 
-## Aggregation and interpretation
+Restoration creates a fresh `runs/evidence/results/` tree. Do not restore over the
+checkout or overwrite curated records. Source snapshots retain their historical
+filenames and equations; they are independent of current package organization.
+The earlier cleanup backup also contains superseded exploration outside the
+maintained evidence collection. Git history has not been rewritten.
 
-- **SAC:** average held-out markets within each training seed, then report the mean and sample standard deviation across independently trained seeds.
-- **Baselines:** report the mean and sample standard deviation across held-out market seeds.
-- `n_units`, `n_episodes`, and `aggregation_unit` identify those different sources of variability in the summary. They are not interchangeable confidence intervals. With fewer than two units, sample SD is unavailable: it is `null` in JSON, blank in CSV, and labeled unavailable in command-line output.
-- Comparison plots use the same hierarchy at each timestep. Shading is ±1 sample SD, not a confidence band or significance test. It does not separately quantify SAC scenario variance.
-- `cpi_std` is within-episode price-index variability. The other summary SD fields describe across-unit variation. Fixed prices have zero within-episode price variability by construction; that does not establish good economic control.
-- Review returns alongside total/final currency, volume, and participation. The reward is mostly driven by trade-target deviations with default weights.
-- Include the number of steps and updates: a checkpoint saved before learning starts is a pipeline artifact, not evidence of a trained strategy.
+### Publishing the evidence
 
-The repository includes original poster figures and separately labeled new runs. Never relabel a new run as an original capstone result, and never infer raw historical measurements by digitizing a figure without explicitly describing that process.
+After committing and pushing the corresponding code, create a
+[GitHub Release](https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/releases/new)
+for that code version. Attach the named `.tar.gz` archive and a `SHA256SUMS` file
+containing its checksum from the manifest; use a Release asset rather than adding
+the archive to Git. Download the published asset and check its checksum, then
+replace the local-only availability notices with its verified download link.
+Until that upload is complete, the archive is not publicly available.
+
+## Run maintained experiments
+
+```bash
+# Short installation/pipeline checks, not convergence evidence.
+python -m experiments.run --config experiments/configs/quickstart.json --out runs/quickstart
+python -m experiments.balanced_control \
+  --config experiments/configs/balanced-control-smoke.json --out runs/objective-smoke
+```
+
+Current research runners are `balanced_control`, `robust_training`, `robustness`,
+`model_error_study`, `adaptive_planning` and `compute_tradeoff`. Their remaining
+configs live under `experiments/configs/`. Assign fresh test seeds for changed
+designs and retain source/model metadata. Fitted-model follow-ups accept a restored
+model-error record with `--parent`; it includes the initial logging data and models.
+For original-market reruns, point reference-model paths in a copied config at the
+restored tree. SAC's additional simulated training interactions count as resources.
+
+## Run a completed study from frozen source
+
+Behavior, mechanism and stationary-retraining runners are preserved in their
+evidence snapshots. They remain executable without live copies in `experiments/`:
+
+```bash
+# Supply a copied protocol with fresh held-out seeds for a changed study.
+python scripts/reproduce.py --study behavior --run -- \
+  init --config "$PWD/runs/behavior-input.json" --out "$PWD/runs/behavior-new"
+python scripts/reproduce.py --study behavior --run -- \
+  train --out "$PWD/runs/behavior-new" --workers 4
+```
+
+Arguments after `--` go to the frozen CLI. Use absolute config/output paths so
+new results survive deletion of the temporary source directory. Mechanism uses
+the same phase syntax; stationary uses `--phase init`, `--phase train`, etc.
+These optional runs can be expensive. Verification above reuses saved models.
+
+## Figures, reports and record interpretation
+
+`report.py` consolidates model-error, adaptive, compute and compute-zoom rendering.
+Render only a complete restored/new record under `runs/`:
+
+```bash
+python scripts/report.py --study compute --record runs/evidence/results/diagnostics/2026-11-09-compute-tradeoff
+python scripts/render_summary.py --out runs/research-brief
+```
+
+`plot_application.py` regenerates the original-market overview from saved tables.
+One-time price audits, old timing tools and trace chunk creation are preserved
+with historical evidence or the cleanup backup, rather than daily utilities.
+
+Protocols and frozen choices separate validation from testing. Policy/curve
+metadata record interactions and updates. Score components and service/currency
+metrics expose trade-offs. Means summarize separate policies, not an action
+ensemble. Intervals resample independent model/calibration/market units, not
+individual steps or players. Exploratory intervals are not universal rankings
+or tests of equivalence. [All results](../results/README.md).

@@ -33,6 +33,24 @@ def test_fixed_random_and_adaptive_actions():
     assert action[-1] == 0
 
 
+def test_adaptive_random_magnitude_reproducible_and_directional():
+    env = MultiStoreEnv(MarketConfig(num_players=10, max_steps=3))
+    observation, _ = env.reset(seed=7)
+    first = Baseline("adaptive", env, seed=91)
+    second = Baseline("adaptive", env, seed=91)
+    np.testing.assert_array_equal(first.act(observation), np.zeros(env.action_space.shape))
+    observation, *_ = env.step(np.zeros(env.action_space.shape, dtype=np.float32))
+    n = env.n
+    observation[2*n:3*n] = [0, 5, 10]
+    observation[3*n:4*n] = [0, 5, 10]
+    action = first.act(observation)
+    np.testing.assert_array_equal(action, second.act(observation))
+    assert action[0] > 0 and action[2] == 0 and action[4] < 0
+    assert action[1] < 0 and action[3] == 0 and action[5] > 0
+    assert env.action_space.contains(action) and action[-1] == 0
+    assert not np.array_equal(action, first.act(observation))
+
+
 def test_end_to_end_held_out_evaluation_and_plot_regeneration(tmp_path):
     market = MarketConfig(num_players=8, max_steps=5, shock_step=3)
     sac = SACConfig(episodes=2, hidden=16, batch_size=4, warmup_steps=4, replay_size=30)

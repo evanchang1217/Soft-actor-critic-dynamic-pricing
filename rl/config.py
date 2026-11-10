@@ -60,12 +60,15 @@ class MarketConfig:
     shock_step: int | None = 50
     shock_multiplier: float = 2.0
     association_rules: tuple[dict, ...] = ()
+    reward_mode: str = "legacy"
     reward_count: float = 1.0
     reward_volume: float = 1.0
     reward_cpi: float = 0.5
     reward_money: float = 0.5
 
     def __post_init__(self):
+        if self.reward_mode not in ("legacy", "balanced_v1"):
+            raise ValueError("reward_mode must be legacy or balanced_v1")
         if not self.products or any(not isinstance(p, ProductConfig) for p in self.products):
             raise ValueError("products must contain ProductConfig values")
         if len({p.name for p in self.products}) != len(self.products):

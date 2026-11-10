@@ -1,0 +1,172 @@
+{
+  "market": {
+    "max_steps": 96,
+    "history": 2,
+    "lag": 3,
+    "initial_money": 6000.0,
+    "initial_treasury": 6000.0,
+    "mean_tasks": 8.0,
+    "production_capacity": 36.0,
+    "task_payment": 4.0,
+    "initial_bid": 8.5,
+    "initial_ask": 10.0,
+    "bid_low": 3.0,
+    "bid_high": 12.0,
+    "ask_low": 6.0,
+    "ask_high": 16.0,
+    "spread": 0.5,
+    "price_step": 0.05,
+    "reservation": 7.5,
+    "production_temperature": 1.0,
+    "allocation_temperature": 1.5,
+    "base_slope": 5.0,
+    "weak_slope": 2.0,
+    "strong_slope": 12.0,
+    "reference_rate": 0.15,
+    "money_scale": 0.1,
+    "price_weight": 0.03,
+    "backlog_weight": 0.1,
+    "inventory_weight": 0.01
+  },
+  "regimes": {
+    "nominal": {
+      "switch_probability": 0.06,
+      "buffer_periods": 6.0,
+      "capacity_ratio": 1.5
+    },
+    "static": {
+      "switch_probability": 0.0,
+      "buffer_periods": 6.0,
+      "capacity_ratio": 1.5
+    },
+    "slow": {
+      "switch_probability": 0.02,
+      "buffer_periods": 6.0,
+      "capacity_ratio": 1.5
+    },
+    "fast": {
+      "switch_probability": 0.15,
+      "buffer_periods": 6.0,
+      "capacity_ratio": 1.5
+    },
+    "tight": {
+      "switch_probability": 0.06,
+      "buffer_periods": 3.0,
+      "capacity_ratio": 1.5
+    },
+    "large": {
+      "switch_probability": 0.06,
+      "buffer_periods": 9.0,
+      "capacity_ratio": 1.5
+    },
+    "scarce": {
+      "switch_probability": 0.06,
+      "buffer_periods": 6.0,
+      "capacity_ratio": 1.0
+    },
+    "abundant": {
+      "switch_probability": 0.06,
+      "buffer_periods": 6.0,
+      "capacity_ratio": 2.0
+    },
+    "stress": {
+      "switch_probability": 0.15,
+      "buffer_periods": 3.0,
+      "capacity_ratio": 1.0
+    }
+  },
+  "training_seeds": [
+    30,
+    31,
+    32,
+    33,
+    34
+  ],
+  "training_episodes": 256,
+  "checkpoint_episodes": [
+    128,
+    256
+  ],
+  "validation_seeds": [
+    211000010,
+    211000011,
+    211000012,
+    211000013
+  ],
+  "evaluation_seeds": [
+    212000010,
+    212000011,
+    212000012,
+    212000013,
+    212000014,
+    212000015,
+    212000016,
+    212000017
+  ],
+  "evaluation_steps": 384,
+  "early_window": 96,
+  "representations": [
+    "raw",
+    "stationary"
+  ],
+  "sac": {
+    "hidden": 64,
+    "batch_size": 128,
+    "replay_size": 50000,
+    "warmup_steps": 512,
+    "learning_rate": 0.0003,
+    "gamma": 0.97,
+    "tau": 0.005,
+    "initial_alpha": 0.05,
+    "control_fee": true
+  },
+  "initial_normalized_std": 0.2,
+  "money_gains": [
+    1.0,
+    3.0
+  ],
+  "stock_gains": [
+    0.0,
+    0.5,
+    1.0
+  ],
+  "integral_gains": [
+    0.02,
+    0.06
+  ],
+  "bid_anchors": [
+    7.5,
+    8.0,
+    8.5
+  ],
+  "ask_anchors": [
+    8.0,
+    9.0,
+    10.0,
+    11.0
+  ],
+  "joint_gains": [
+    0.5,
+    1.0,
+    2.0
+  ],
+  "planners": [
+    {
+      "method": "mean4",
+      "horizon": 4,
+      "particles": 1
+    },
+    {
+      "method": "mean12",
+      "horizon": 12,
+      "particles": 1
+    },
+    {
+      "method": "saa12",
+      "horizon": 12,
+      "particles": 8
+    }
+  ],
+  "bootstrap_seed": 20261125,
+  "bootstrap_resamples": 5000
+}

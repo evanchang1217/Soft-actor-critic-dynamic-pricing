@@ -1,17 +1,29 @@
 "use strict";
 
 const descriptions = {
-  sac: "Soft Actor-Critic learns continuous price and fee adjustments from market rewards.",
+  sac: "Soft Actor-Critic learns continuous price adjustments from the selected reward. The fee stays at 5%.",
   fixed: "Keep the initial sampled prices and fee unchanged throughout each episode.",
-  random: "Sample bounded price and fee changes at every market step.",
+  random: "Sample bounded price changes at every market step. Keep the fee at 5%.",
   adaptive: "Adjust prices from the previous step's trading participation. Keep the initial fee."
 };
+const rewardLabels = {balanced_v1: "Balanced currency + trade", legacy: "Legacy trade-target reward"};
 let latestHistory = [];
+let initialGoldTotal = null;
 const byId = (id) => document.getElementById(id);
 const format = (value, digits = 2) => Number(value).toLocaleString("en-US", {maximumFractionDigits: digits});
 
 function updateStrategyHelp() {
   byId("strategy-help").textContent = descriptions[byId("method").value];
+}
+
+function updateRewardHelp() {
+  byId("reward-help").textContent = byId("reward-mode").value === "balanced_v1"
+    ? "Uses the study's balanced objective: normalized trade targets, shop-index changes, and deviation from initial total player gold. All strategies keep a fixed 5% fee."
+    : "Uses the original reward weights, dominated by trading targets. All strategies keep a fixed 5% fee for a consistent comparison.";
+}
+
+function goldDeviation(row) {
+  return initialGoldTotal > 0 ? 100 * Math.abs(row.final_money / initialGoldTotal - 1) : null;
 }
 
 function addProduct() {
@@ -45,7 +57,8 @@ function drawChart(id, values, color) {
   const left = 55, right = width - 12, top = 16, bottom = height - 27;
   const min = Math.min(...values), max = Math.max(...values);
   const margin = Math.max((max - min) * 0.15, Math.abs(max) * 0.015, 0.01);
-  const low = min - margin, high = max + margin;
+  const low = id === "deviation-chart" ? Math.max(0, min - margin) : min - margin;
+  const high = max + margin;
   const x = (index) => left + index * (right - left) / Math.max(values.length - 1, 1);
   const y = (value) => bottom - (value - low) * (bottom - top) / (high - low);
   ctx.font = "10px system-ui";
@@ -62,12 +75,14 @@ function drawChart(id, values, color) {
   values.forEach((value, index) => index ? ctx.lineTo(x(index), y(value)) : ctx.moveTo(x(index), y(value)));
   ctx.stroke();
   if (values.length === 1) { ctx.beginPath(); ctx.arc(x(0), y(values[0]), 3, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); }
-  canvas.setAttribute("aria-label", `${id === "return-chart" ? "Episode return" : "Mean price index"}: ${values.map(v => format(v)).join(", ")}`);
+  const label = {"return-chart": "Episode return", "cpi-chart": "Mean price index", "deviation-chart": "Final gold deviation (%)"}[id];
+  canvas.setAttribute("aria-label", `${label}: ${values.map(v => format(v)).join(", ")}`);
 }
 
 function redrawCharts() {
   drawChart("return-chart", latestHistory.map(row => row.return), "#237d65");
   drawChart("cpi-chart", latestHistory.map(row => row.mean_cpi), "#a47839");
+  if (initialGoldTotal > 0) drawChart("deviation-chart", latestHistory.map(goldDeviation), "#4964cf");
 }
 
 function updateStatus(data) {
@@ -76,14 +91,24 @@ function updateStatus(data) {
   byId("start-button").disabled = data.running;
   byId("stop-button").hidden = !data.running;
   byId("metric-episodes").textContent = data.total_episodes ? `${data.current_episode} / ${data.total_episodes}` : "—";
+  const market = data.configuration?.market;
+  initialGoldTotal = market ? market.num_players * market.initial_gold : null;
+  const objective = market ? rewardLabels[market.reward_mode || "legacy"] : null;
+  const feeControl = data.configuration?.sac?.control_fee;
+  byId("active-objective").textContent = market
+    ? `This run: ${objective} · ${feeControl ? "Fee control enabled" : `Fixed fee ${format(100 * market.initial_fee, 1)}%`} · Initial total gold ${format(initialGoldTotal, 0)}`
+    : "No run selected yet. Run settings will appear here.";
+  byId("return-chart-label").textContent = objective ? `Episode return · ${objective}` : "Episode return";
   latestHistory = data.history || [];
   const row = latestHistory.at(-1);
   if (row) {
     byId("metric-return").textContent = format(row.return);
     byId("metric-cpi").textContent = format(row.mean_cpi, 3);
     byId("metric-gold").textContent = format(row.player_gold_mean, 1);
+    byId("metric-deviation").textContent = initialGoldTotal > 0 ? `${format(goldDeviation(row), 2)}%` : "—";
+    byId("metric-volume").textContent = format(row.total_volume, 0);
   } else {
-    for (const id of ["metric-return", "metric-cpi", "metric-gold"]) byId(id).textContent = "—";
+    for (const id of ["metric-return", "metric-cpi", "metric-gold", "metric-deviation", "metric-volume"]) byId(id).textContent = "—";
   }
   byId("chart-empty").hidden = latestHistory.length > 0;
   byId("chart-content").hidden = !latestHistory.length;
@@ -137,6 +162,7 @@ async function poll() {
 }
 
 byId("method").addEventListener("change", updateStrategyHelp);
+byId("reward-mode").addEventListener("change", updateRewardHelp);
 byId("add-product").addEventListener("click", addProduct);
 byId("remove-product").addEventListener("click", () => {
   const wrap = byId("product-fields");
@@ -152,4 +178,5 @@ byId("stop-button").addEventListener("click", async () => {
 });
 new ResizeObserver(redrawCharts).observe(byId("chart-content"));
 updateStrategyHelp();
+updateRewardHelp();
 poll();

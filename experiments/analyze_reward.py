@@ -8,6 +8,8 @@ import math
 from pathlib import Path
 
 from rl.artifacts import new_run_directory, write_json
+from rl.config import MarketConfig
+from rl.rewards import reward_components
 from .evaluate import write_csv
 from .protocol import run_main
 
@@ -26,13 +28,13 @@ def open_step_log(path):
 
 
 def reward_analysis(steps_path, market):
-    weights = {name: market[f"reward_{name}"] for name in COMPONENTS}
+    config = MarketConfig.from_dict(market)
     groups = {}
     with open_step_log(steps_path) as stream:
         for row in csv.DictReader(stream):
             key = (row.get("scenario", "nominal"), row["method"])
             group = groups.setdefault(key, {"n_steps": 0, **{name: 0.0 for name in COMPONENTS}})
-            penalties = {name: weights[name] * float(row[f"loss_{name}"]) for name in COMPONENTS}
+            penalties = reward_components(config, row, row.get("money"))
             if not math.isclose(-float(row["reward"]), sum(penalties.values()), rel_tol=1e-6, abs_tol=1e-6):
                 raise ValueError("Saved reward does not match recorded component losses and configured weights")
             if not all(math.isfinite(value) and value >= 0 for value in penalties.values()):

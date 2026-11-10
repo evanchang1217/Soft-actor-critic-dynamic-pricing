@@ -1,11 +1,28 @@
-# Results and provenance
+# Results
 
-| Directory | Evidence |
+Start with the question you want to answer:
+
+| Question | Guide |
 | --- | --- |
-| [`original/`](original/) | Directly extracted original poster comparisons and the old standalone demo reward image |
-| [`reevaluation/2026-10-28-reference/`](reevaluation/2026-10-28-reference/) | Initial exploratory four-method comparison: 5 training seeds / 10 held-out markets, with raw data and models |
-| [`reevaluation/2026-10-28-review/`](reevaluation/2026-10-28-review/) | Follow-up: validation-selected simple controls, true fixed-fee SAC, 20 fresh test markets, 5 specified scenarios, reward audit, 10 inference models, and compressed raw steps |
+| What did the main SAC and feedback experiment show? | [Main experiment](main/) |
+| When did SAC fail, and what are the simulation limits? | [Limitations and failure cases](limitations/) |
+| How does SAC compare with PI and stronger planning? | [Planning and computation](planning/) |
 
-New evaluations must be stored separately from historical artifacts. Each published run should include its resolved settings, manifests, raw step/episode data, training logs, and an explanation of what conclusions the run can support. Local experiment outputs and model checkpoints are saved under ignored `runs/` directories.
+The original individual-player economy and the later aggregate task economy use
+different rewards and populations; their scores cannot be pooled. The dated
+`confirmation/`, `diagnostics/` and `reevaluation/` directories retain key
+protocols, result tables, figures and saved-demo inputs. Their paths also identify
+frozen records used by the reproduction tools.
 
-See [the experiment protocol](../docs/experiments.md) for commands and aggregation definitions. A smooth learning curve or a short smoke run does not establish superiority over a baseline.
+## Complete evidence
+
+Detailed per-run data, model-training records, audit inputs, source snapshots and
+additional checkpoints are in a separate checksum-verified archive. The archive
+is **currently local and not publicly downloadable**; full historical verification
+requires obtaining it from the project owner. Checkout tables and demo models
+remain available. [Inventory and hashes](archive-manifest.json) ·
+[Archive access and restoration](../docs/experiments.md#full-evidence-archive).
+
+SAC is an existing algorithm. These are bounded empirical comparisons in synthetic
+markets, not evidence of real-player welfare or a universal advantage over
+rule-based methods. [Research scope](../docs/methodology.md#research-scope).

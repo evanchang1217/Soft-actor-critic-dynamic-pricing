@@ -1,0 +1,14 @@
+# Keep implementation text consistent on every checkout.
+* text=auto eol=lf
+
+# Published records are byte-verified; never normalize their contents.
+results/** -text
+*.csv -text whitespace=cr-at-eol
+
+# Binary assets and archived source/checkpoints.
+*.png binary
+*.jpg binary
+*.pdf binary
+*.pt binary
+*.zip binary
+*.gz binary

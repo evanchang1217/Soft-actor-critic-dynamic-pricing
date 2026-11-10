@@ -13,17 +13,24 @@ from rl.config import MarketConfig, ProductConfig, SACConfig
 from .tasks import runner
 
 
+REWARD_PROFILES = {
+    "balanced_v1": {"reward_count": 0.5, "reward_volume": 0.5, "reward_cpi": 0.05, "reward_money": 1.0},
+    "legacy": {"reward_count": 1.0, "reward_volume": 1.0, "reward_cpi": 0.5, "reward_money": 0.5},
+}
+
+
 @require_http_methods(["GET", "POST"])
 def start_training_view(request):
     error, status = None, 200
-    market = MarketConfig(max_steps=60, shock_step=30)
-    defaults = {"method": "sac", "episodes": 20, "max_steps": 60,
-                "num_players": 200, "seed": 0, "shock_step": 30}
+    market = MarketConfig(reward_mode="balanced_v1", **REWARD_PROFILES["balanced_v1"])
+    defaults = {"method": "sac", "reward_mode": "balanced_v1", "episodes": 100, "max_steps": 100,
+                "num_players": 200, "seed": 0, "shock_step": 50}
     previous = runner.snapshot()
     if previous.get("configuration"):
         configuration = previous["configuration"]
         market = MarketConfig.from_dict(configuration["market"])
-        defaults = {"method": previous["method"], "episodes": configuration["sac"]["episodes"],
+        defaults = {"method": previous["method"], "reward_mode": market.reward_mode,
+                    "episodes": configuration["sac"]["episodes"],
                     "max_steps": market.max_steps, "num_players": market.num_players,
                     "seed": configuration["seed"], "shock_step": market.shock_step or ""}
     products = [p.__dict__ for p in market.products]
@@ -31,16 +38,20 @@ def start_training_view(request):
     if request.method == "POST":
         # Keep the submitted values even when parsing or validation fails.
         defaults = {"method": request.POST.get("method", "sac"),
-                    "episodes": request.POST.get("episodes", "20"),
-                    "max_steps": request.POST.get("max_steps", "60"),
+                    "reward_mode": request.POST.get("reward_mode", "balanced_v1"),
+                    "episodes": request.POST.get("episodes", "100"),
+                    "max_steps": request.POST.get("max_steps", "100"),
                     "num_players": request.POST.get("num_players", "200"),
                     "seed": request.POST.get("seed", "0"),
-                    "shock_step": request.POST.get("shock_step", "30")}
+                    "shock_step": request.POST.get("shock_step", "50")}
         rules = request.POST.get("association_rules", "[]")
         try:
             method = defaults["method"]
             if method not in METHODS:
                 raise ValueError("Choose a supported pricing method")
+            reward_mode = defaults["reward_mode"]
+            if reward_mode not in REWARD_PROFILES:
+                raise ValueError("Choose Balanced currency + trade or Legacy trade-target reward")
             count = int(request.POST.get("product_count", "3"))
             if not 1 <= count <= 12:
                 raise ValueError("The web demo supports 1–12 products")
@@ -64,10 +75,14 @@ def start_training_view(request):
                                        for p in products)
             market = MarketConfig(products=validated_products, num_players=players,
                                   max_steps=steps, shock_step=int(shock) if shock else None,
-                                  association_rules=tuple(association_rules))
-            sac = SACConfig(episodes=episodes, hidden=64, batch_size=64, warmup_steps=min(100, max(0, episodes * steps // 4)))
+                                  association_rules=tuple(association_rules), reward_mode=reward_mode,
+                                  **REWARD_PROFILES[reward_mode])
+            # Match the study at the default 10,000-step budget. Shorter runs
+            # reduce warmup for demonstration; they are not the research protocol.
+            sac = SACConfig(episodes=episodes, hidden=128, batch_size=128, control_fee=False,
+                            warmup_steps=min(1000, episodes * steps // 4))
             if not runner.start(market, sac, seed, method, settings.DEMO_RUNS_DIR):
-                error, status = "A run is already active. Stop it or wait for completion.", 409
+                error, status = "A training run or saved-model comparison is active. Wait for completion or stop the training run.", 409
             else:
                 return redirect("home")
         except (ValueError, TypeError, KeyError, OverflowError) as exc:

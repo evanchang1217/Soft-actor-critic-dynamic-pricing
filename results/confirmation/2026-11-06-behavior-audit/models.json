@@ -1,0 +1,187 @@
+[
+  {
+    "family": "original",
+    "training_seed": 0,
+    "path": "models/original/seed-0/policy.pt",
+    "sha256": "24def15e30667e34c858c74b02dc1bc59b4cc9ba9bc1d1800b263ed75b18bf0e",
+    "original_path": "results/confirmation/2026-11-05-robustness/models/nominal/seed-0/policy.pt",
+    "reused": true
+  },
+  {
+    "family": "original",
+    "training_seed": 1,
+    "path": "models/original/seed-1/policy.pt",
+    "sha256": "e5a3b0e0b91b18787c69727e035ac778e3141fbf719a93b660f396530683a773",
+    "original_path": "results/confirmation/2026-11-05-robustness/models/nominal/seed-1/policy.pt",
+    "reused": true
+  },
+  {
+    "family": "original",
+    "training_seed": 2,
+    "path": "models/original/seed-2/policy.pt",
+    "sha256": "0e03b949381f0fe144e0ca6e83ba0ced7da457dabdb69e3f891782449b405f93",
+    "original_path": "results/confirmation/2026-11-05-robustness/models/nominal/seed-2/policy.pt",
+    "reused": true
+  },
+  {
+    "family": "original",
+    "training_seed": 3,
+    "path": "models/original/seed-3/policy.pt",
+    "sha256": "8a966edefd59373f5bb70203d1742ca6c6e2da1617187af5b5cb98ba71b1eef7",
+    "original_path": "results/confirmation/2026-11-05-robustness/models/nominal/seed-3/policy.pt",
+    "reused": true
+  },
+  {
+    "family": "original",
+    "training_seed": 4,
+    "path": "models/original/seed-4/policy.pt",
+    "sha256": "82b1ac99a31942a0568babcd9577c64db984ca7f4a38e621d108a68b372a5b79",
+    "original_path": "results/confirmation/2026-11-05-robustness/models/nominal/seed-4/policy.pt",
+    "reused": true
+  },
+  {
+    "family": "randomized",
+    "training_seed": 0,
+    "path": "models/randomized/seed-0/policy.pt",
+    "sha256": "aba7e7309fa7dd176fd9029b8a952ca5cb84594218e50ca727c8f55f44f8f610",
+    "original_path": "results/confirmation/2026-11-05-robustness/models/randomized/seed-0/policy.pt",
+    "reused": true
+  },
+  {
+    "family": "randomized",
+    "training_seed": 1,
+    "path": "models/randomized/seed-1/policy.pt",
+    "sha256": "3dbd94123de5b15166890fd1d9691e742a2de5a9f709abc727bb7a299dd64c2b",
+    "original_path": "results/confirmation/2026-11-05-robustness/models/randomized/seed-1/policy.pt",
+    "reused": true
+  },
+  {
+    "family": "randomized",
+    "training_seed": 2,
+    "path": "models/randomized/seed-2/policy.pt",
+    "sha256": "6136829478b44e5ad36810a01c7928948fbe86afe1b403593b36090fc7acdb47",
+    "original_path": "results/confirmation/2026-11-05-robustness/models/randomized/seed-2/policy.pt",
+    "reused": true
+  },
+  {
+    "family": "randomized",
+    "training_seed": 3,
+    "path": "models/randomized/seed-3/policy.pt",
+    "sha256": "c732c60ef8284c98fdf9b1569d8e14cb98400e440cca4bd1366b558f90b11338",
+    "original_path": "results/confirmation/2026-11-05-robustness/models/randomized/seed-3/policy.pt",
+    "reused": true
+  },
+  {
+    "family": "randomized",
+    "training_seed": 4,
+    "path": "models/randomized/seed-4/policy.pt",
+    "sha256": "a675f8850ae13db35dbcfdd34900e264d94b44a3187512a4c7fc20383dd0a8ed",
+    "original_path": "results/confirmation/2026-11-05-robustness/models/randomized/seed-4/policy.pt",
+    "reused": true
+  },
+  {
+    "family": "separated",
+    "training_seed": 0,
+    "path": "models/separated/seed-0/policy.pt",
+    "sha256": "c1fe4a29519bd780195884b1d770fba74619e84c3f6251be0a330d2af7122d82",
+    "reused": false
+  },
+  {
+    "family": "separated",
+    "training_seed": 1,
+    "path": "models/separated/seed-1/policy.pt",
+    "sha256": "13bc1483696636ba8c8a31e8a8c22f02a222bb7f0f2e9929dffa9f746eba053c",
+    "reused": false
+  },
+  {
+    "family": "separated",
+    "training_seed": 2,
+    "path": "models/separated/seed-2/policy.pt",
+    "sha256": "a40e8f6224487bb19f1eaf4c55daa09ebfb9a533c9e9b94323a10104f8f7e2f8",
+    "reused": false
+  },
+  {
+    "family": "separated",
+    "training_seed": 3,
+    "path": "models/separated/seed-3/policy.pt",
+    "sha256": "4bf72da969014ee1475fa4814a6c391418707ea6d4a760691672f5a3ab31d708",
+    "reused": false
+  },
+  {
+    "family": "separated",
+    "training_seed": 4,
+    "path": "models/separated/seed-4/policy.pt",
+    "sha256": "6fbefa5e5dcea46268eadcc3346037c8a450477ab2841d851030856e6bc00d6c",
+    "reused": false
+  },
+  {
+    "family": "inventory",
+    "training_seed": 0,
+    "path": "models/inventory/seed-0/policy.pt",
+    "sha256": "e4e97e90d92b2dcd14e183dceed0b611febda95cc9f3a99fa02023671a008eae",
+    "reused": false
+  },
+  {
+    "family": "inventory",
+    "training_seed": 1,
+    "path": "models/inventory/seed-1/policy.pt",
+    "sha256": "a376d42272e996c19643356489058555ba2fa0e67979bde2d5aabb0ebf6891aa",
+    "reused": false
+  },
+  {
+    "family": "inventory",
+    "training_seed": 2,
+    "path": "models/inventory/seed-2/policy.pt",
+    "sha256": "6db3ab81930b76f0e727d2ff418ae6d96dc90e41f635bdb9a6c5cf18bcdfe701",
+    "reused": false
+  },
+  {
+    "family": "inventory",
+    "training_seed": 3,
+    "path": "models/inventory/seed-3/policy.pt",
+    "sha256": "566a9e146484bda6f8fd4a334ae3c02b76d47d936bdfc388f7bd700e3bc8da0f",
+    "reused": false
+  },
+  {
+    "family": "inventory",
+    "training_seed": 4,
+    "path": "models/inventory/seed-4/policy.pt",
+    "sha256": "cf16b2cdb2c4c77085084bea352d4f861bb6c354a0be398738b40711a803483b",
+    "reused": false
+  },
+  {
+    "family": "combined",
+    "training_seed": 0,
+    "path": "models/combined/seed-0/policy.pt",
+    "sha256": "64ee32f3b9d04e71529fd0347776f2e83d100fc83e195bf85f2ee6d8a6713d00",
+    "reused": false
+  },
+  {
+    "family": "combined",
+    "training_seed": 1,
+    "path": "models/combined/seed-1/policy.pt",
+    "sha256": "f3ad766d3a11c51aa51c91f0aa40cb352c6a973fb6b29fc65b83bb0262099421",
+    "reused": false
+  },
+  {
+    "family": "combined",
+    "training_seed": 2,
+    "path": "models/combined/seed-2/policy.pt",
+    "sha256": "3500f132a2889310cd3e80047b83cd99135a22852fb73673556c0b12d0b8bbbc",
+    "reused": false
+  },
+  {
+    "family": "combined",
+    "training_seed": 3,
+    "path": "models/combined/seed-3/policy.pt",
+    "sha256": "6012558b0639e8d3f02a324346c6a4ba1152dfd2aff6d40965ed4756de062d9f",
+    "reused": false
+  },
+  {
+    "family": "combined",
+    "training_seed": 4,
+    "path": "models/combined/seed-4/policy.pt",
+    "sha256": "fb4912fa4c9925dc7dc7fb4d35dcd0c6df7ccaaa86982024e7a79a3b54e36d80",
+    "reused": false
+  }
+]

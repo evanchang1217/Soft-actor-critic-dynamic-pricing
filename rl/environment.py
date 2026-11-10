@@ -5,6 +5,7 @@ from gymnasium.spaces import Box
 import numpy as np
 
 from .config import MarketConfig
+from .rewards import reward_components
 
 
 class MultiStoreEnv(gym.Env):
@@ -168,8 +169,7 @@ class MultiStoreEnv(gym.Env):
             # Preserve the demo's additional num_players divisor; document its effect.
             "loss_money": abs(money-self.pre_money) / max(c.num_players * self.pre_money, 1e-12),
         }
-        reward = -(c.reward_count * losses["loss_count"] + c.reward_volume * losses["loss_volume"]
-                   + c.reward_cpi * losses["loss_cpi"] + c.reward_money * losses["loss_money"])
+        reward = -sum(reward_components(c, losses, money).values())
         self.pre_cpi, self.pre_money = self.price_index, money
         self.state = self._observation(buy_count, sell_count, buy_volume, sell_volume, sink)
         info = self._metrics(buy_count, sell_count, buy_volume, sell_volume, sink)

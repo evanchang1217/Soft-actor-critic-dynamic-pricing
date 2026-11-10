@@ -11,6 +11,7 @@ import torch
 
 from rl.artifacts import manifest, new_run_directory, write_json
 from rl.environment import MultiStoreEnv
+from rl.rewards import reward_components
 from rl.sac import SACAgent, verify_checkpoint_updates
 from rl.training import episode_summary
 from .baselines import Baseline, METHODS
@@ -23,6 +24,21 @@ SUMMARY_METRICS = ("return", "mean_cpi", "cpi_std", "final_money", "total_sink",
 def sample_std(values):
     """Sample SD is undefined with fewer than two independent units."""
     return float(np.std(values, ddof=1)) if len(values) > 1 else None
+
+
+def market_summary(rows):
+    """Average model draws within each market before summarizing markets."""
+    groups = {}
+    for row in rows:
+        groups.setdefault(row["evaluation_seed"], []).append(row)
+    if not groups:
+        raise ValueError("At least one evaluation market is required")
+    summary = {}
+    for metric in ("return", "mean_cpi", "final_cpi", "total_volume", "final_money"):
+        values = [float(np.mean([float(row[metric]) for row in unit])) for unit in groups.values()]
+        summary[metric] = float(np.mean(values))
+        summary[metric + "_market_sd"] = sample_std(values)
+    return summary
 
 
 def format_mean_std(mean, deviation):
@@ -72,7 +88,7 @@ def evaluate(market, protocol, checkpoints, output, methods=METHODS, *, allow_un
         if checkpoint["seed"] in [record["training_seed"] for record in model_records]:
             raise ValueError("Checkpoints must have distinct training seeds")
         if expected_config is not None and agent.config.control_fee != expected_config.control_fee:
-            raise ValueError("Cannot pool fixed-fee and fee-control SAC checkpoints; use experiments.review to compare them")
+            raise ValueError("Cannot pool fixed-fee and fee-control SAC checkpoints; evaluate each fee-control setting as a separate condition")
         if expected_config is not None and agent.config != expected_config:
             raise ValueError("Cannot pool SAC checkpoints with different training settings")
         if expected_steps is not None and checkpoint["trained_steps"] != expected_steps:
@@ -126,6 +142,103 @@ def evaluate(market, protocol, checkpoints, output, methods=METHODS, *, allow_un
     write_json(output / "summary.json", summary)
     env.close()
     return summary
+
+
+
+METRICS = ("common_return", "mean_gold_deviation", "max_gold_deviation", "total_volume",
+           "mean_participation", "mean_cpi", "mean_price_change", "mean_item_price_change",
+           "final_gold_ratio", "penalty_count", "penalty_volume", "penalty_cpi", "penalty_money")
+
+class BlendPolicy:
+    def __init__(self, agent, feedback, weight):
+        if type(weight) not in (int, float) or not np.isfinite(weight) or not 0 <= weight <= 1:
+            raise ValueError("Feedback weight must be between zero and one")
+        self.agent, self.feedback, self.weight = agent, feedback, weight
+
+    def act(self, observation):
+        learned = self.agent.act(observation, deterministic=True)
+        controlled = self.feedback.act(observation)
+        action = (1-self.weight)*learned + self.weight*controlled
+        action[-1] = 0
+        env = self.feedback.env
+        return np.clip(action, env.action_space.low, env.action_space.high).astype(np.float32)
+
+
+def control_rollout(env, policy, seed):
+    observation, _ = env.reset(seed=seed)
+    target = env.config.num_players * env.config.initial_gold
+    parts = {k: [] for k in ("count", "volume", "cpi", "money")}
+    gold, volumes, participation, prices, changes, item_changes = [], [], [], [], [], []
+    for _ in range(env.config.max_steps):
+        previous = env.store_sell_prices.copy()
+        action = policy.act(observation)
+        if not env.action_space.contains(action) or action[-1] != 0:
+            raise ValueError("Policy broke the common fixed-fee action constraints")
+        observation, reward, terminated, truncated, info = env.step(action)
+        penalties = reward_components(env.config, info, info["money"])
+        if not np.isclose(reward, -sum(penalties.values()), rtol=0, atol=1e-12):
+            raise ValueError("Reward reconstruction failed")
+        for key, value in penalties.items():
+            parts[key].append(value)
+        gold.append(info["money"]/target)
+        volumes.append(info["trade_volume"])
+        participation.append(info["participation"])
+        prices.append(info["cpi"])
+        changes.append(info["loss_cpi"])
+        item_changes.append(float(np.mean(np.abs(env.store_sell_prices/previous-1))))
+        if terminated or truncated:
+            break
+    return {"common_return": -sum(sum(v) for v in parts.values()),
+            "mean_gold_deviation": float(np.mean(np.abs(np.array(gold)-1))),
+            "max_gold_deviation": float(np.max(np.abs(np.array(gold)-1))),
+            "total_volume": float(sum(volumes)), "mean_participation": float(np.mean(participation)),
+            "mean_cpi": float(np.mean(prices)), "mean_price_change": float(np.mean(changes)),
+            "mean_item_price_change": float(np.mean(item_changes)), "final_gold_ratio": gold[-1],
+            **{f"penalty_{k}": float(sum(v)) for k, v in parts.items()}}
+
+
+def control_summary(rows):
+    summaries = []
+    for scenario, method in dict.fromkeys((r["scenario"], r["method"]) for r in rows):
+        subset = [r for r in rows if (r["scenario"], r["method"]) == (scenario, method)]
+        markets = sorted({r["evaluation_seed"] for r in subset})
+        models = sorted({r["training_seed"] for r in subset if r["training_seed"] != ""})
+        result = {"scenario": scenario, "method": method, "n_markets": len(markets), "n_models": len(models)}
+        for metric in METRICS:
+            values = [np.mean([r[metric] for r in subset if r["evaluation_seed"] == m]) for m in markets]
+            result[metric+"_mean"] = float(np.mean(values))
+            result[metric+"_market_sd"] = sample_std(values)
+            model_values = [np.mean([r[metric] for r in subset if r["training_seed"] == s]) for s in models]
+            result[metric+"_model_sd"] = sample_std(model_values)
+        summaries.append(result)
+    return summaries
+
+
+def paired_interval(proposed, reference, metric, rng, resamples=10000):
+    markets = sorted({r["evaluation_seed"] for r in proposed})
+    models = sorted({r["training_seed"] for r in proposed})
+    def matrix(rows):
+        lookup = {(r["training_seed"], r["evaluation_seed"]): r[metric] for r in rows}
+        if len(lookup) != len(rows):
+            raise ValueError("Duplicate episode identity")
+        row_models = sorted({r["training_seed"] for r in rows})
+        if set(markets) != {r["evaluation_seed"] for r in rows}:
+            raise ValueError("Paired methods need identical markets")
+        if row_models != models and row_models != [""]:
+            raise ValueError("Paired learned policies need matched training seeds")
+        if len(lookup) != len(row_models)*len(markets):
+            raise ValueError("Incomplete model by market grid")
+        return np.array([[lookup[(s,m)] for m in markets] for s in row_models])
+    difference = matrix(proposed)-matrix(reference)
+    draws = []
+    for start in range(0, resamples, 1000):
+        count = min(1000, resamples-start)
+        si = rng.integers(len(models), size=(count,len(models)))
+        mi = rng.integers(len(markets), size=(count,len(markets)))
+        draws.extend(difference[si[:,:,None],mi[:,None,:]].mean(axis=(1,2)))
+    lo, hi = np.percentile(draws,[2.5,97.5])
+    return {"metric": metric, "difference": float(difference.mean()),
+            "exploratory_95_low": float(lo), "exploratory_95_high": float(hi)}
 
 
 def main():

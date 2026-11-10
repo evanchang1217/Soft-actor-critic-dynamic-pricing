@@ -21,5 +21,5 @@ from django.urls import include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('myapp.urls')),  # ✅ 讓 myapp 管理自己的 views
+    path('', include('myapp.urls')),  # Delegate application views to myapp.
 ]

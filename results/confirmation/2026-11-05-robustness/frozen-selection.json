@@ -1,0 +1,714 @@
+{
+  "test_episodes_seen": 0,
+  "feedback_method": "feedback_18",
+  "feedback_parameters": {
+    "buy_fraction": 0.75,
+    "sell_fraction": 0.25,
+    "gain": 1.0
+  },
+  "operating_points": [
+    {
+      "family": "feedback",
+      "cap": 0.03,
+      "method": "feedback_11",
+      "weight": null,
+      "validation_feasible": true,
+      "validation_error": 0.023444990168151002,
+      "validation_volume": 75572.0
+    },
+    {
+      "family": "feedback",
+      "cap": 0.05,
+      "method": "feedback_27",
+      "weight": null,
+      "validation_feasible": true,
+      "validation_error": 0.03631188895251725,
+      "validation_volume": 312966.06666666665
+    },
+    {
+      "family": "feedback",
+      "cap": 0.1,
+      "method": "feedback_25",
+      "weight": null,
+      "validation_feasible": true,
+      "validation_error": 0.08390336076532043,
+      "validation_volume": 320464.55
+    },
+    {
+      "family": "nominal",
+      "cap": 0.03,
+      "method": "nominal_w0.75",
+      "weight": 0.75,
+      "validation_feasible": false,
+      "validation_error": 0.03354703205599061,
+      "validation_volume": 189032.26333333334
+    },
+    {
+      "family": "nominal",
+      "cap": 0.05,
+      "method": "nominal_w0.5",
+      "weight": 0.5,
+      "validation_feasible": true,
+      "validation_error": 0.03543367408387613,
+      "validation_volume": 192745.16000000003
+    },
+    {
+      "family": "nominal",
+      "cap": 0.1,
+      "method": "nominal_w0",
+      "weight": 0.0,
+      "validation_feasible": true,
+      "validation_error": 0.0736489749875007,
+      "validation_volume": 222501.53999999998
+    },
+    {
+      "family": "randomized",
+      "cap": 0.03,
+      "method": "randomized_w0.5",
+      "weight": 0.5,
+      "validation_feasible": false,
+      "validation_error": 0.0305717301210096,
+      "validation_volume": 192220.3333333333
+    },
+    {
+      "family": "randomized",
+      "cap": 0.05,
+      "method": "randomized_w0",
+      "weight": 0.0,
+      "validation_feasible": true,
+      "validation_error": 0.03886776942329591,
+      "validation_volume": 234858.9266666667
+    },
+    {
+      "family": "randomized",
+      "cap": 0.1,
+      "method": "randomized_w0",
+      "weight": 0.0,
+      "validation_feasible": true,
+      "validation_error": 0.03886776942329591,
+      "validation_volume": 234858.9266666667
+    }
+  ],
+  "matched_comparisons": [
+    {
+      "family": "nominal",
+      "cap": 0.03,
+      "method": "nominal_w0.75",
+      "weight": 0.75,
+      "validation_feasible": false,
+      "validation_error": 0.03354703205599061,
+      "validation_volume": 189032.26333333334,
+      "feedback_method": "feedback_27",
+      "validation_error_gap": -0.0027648568965266407
+    },
+    {
+      "family": "nominal",
+      "cap": 0.05,
+      "method": "nominal_w0.5",
+      "weight": 0.5,
+      "validation_feasible": true,
+      "validation_error": 0.03543367408387613,
+      "validation_volume": 192745.16000000003,
+      "feedback_method": "feedback_27",
+      "validation_error_gap": -0.0008782148686411265
+    },
+    {
+      "family": "nominal",
+      "cap": 0.1,
+      "method": "nominal_w0",
+      "weight": 0.0,
+      "validation_feasible": true,
+      "validation_error": 0.0736489749875007,
+      "validation_volume": 222501.53999999998,
+      "feedback_method": "feedback_15",
+      "validation_error_gap": -0.0020375709512416296
+    },
+    {
+      "family": "randomized",
+      "cap": 0.03,
+      "method": "randomized_w0.5",
+      "weight": 0.5,
+      "validation_feasible": false,
+      "validation_error": 0.0305717301210096,
+      "validation_volume": 192220.3333333333,
+      "feedback_method": "feedback_10",
+      "validation_error_gap": 2.5121727611716882e-05
+    },
+    {
+      "family": "randomized",
+      "cap": 0.05,
+      "method": "randomized_w0",
+      "weight": 0.0,
+      "validation_feasible": true,
+      "validation_error": 0.03886776942329591,
+      "validation_volume": 234858.9266666667,
+      "feedback_method": "feedback_27",
+      "validation_error_gap": 0.0025558804707786556
+    },
+    {
+      "family": "randomized",
+      "cap": 0.1,
+      "method": "randomized_w0",
+      "weight": 0.0,
+      "validation_feasible": true,
+      "validation_error": 0.03886776942329591,
+      "validation_volume": 234858.9266666667,
+      "feedback_method": "feedback_27",
+      "validation_error_gap": 0.0025558804707786556
+    }
+  ],
+  "candidate_specs": [
+    {
+      "method": "feedback_0",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.5,
+        "sell_fraction": 0.0,
+        "gain": 0.25
+      }
+    },
+    {
+      "method": "feedback_1",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.5,
+        "sell_fraction": 0.0,
+        "gain": 0.5
+      }
+    },
+    {
+      "method": "feedback_2",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.5,
+        "sell_fraction": 0.0,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "feedback_3",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.5,
+        "sell_fraction": 0.0,
+        "gain": 2.0
+      }
+    },
+    {
+      "method": "feedback_4",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.5,
+        "sell_fraction": 0.25,
+        "gain": 0.25
+      }
+    },
+    {
+      "method": "feedback_5",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.5,
+        "sell_fraction": 0.25,
+        "gain": 0.5
+      }
+    },
+    {
+      "method": "feedback_6",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.5,
+        "sell_fraction": 0.25,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "feedback_7",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.5,
+        "sell_fraction": 0.25,
+        "gain": 2.0
+      }
+    },
+    {
+      "method": "feedback_8",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.5,
+        "sell_fraction": 0.5,
+        "gain": 0.25
+      }
+    },
+    {
+      "method": "feedback_9",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.5,
+        "sell_fraction": 0.5,
+        "gain": 0.5
+      }
+    },
+    {
+      "method": "feedback_10",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.5,
+        "sell_fraction": 0.5,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "feedback_11",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.5,
+        "sell_fraction": 0.5,
+        "gain": 2.0
+      }
+    },
+    {
+      "method": "feedback_12",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.0,
+        "gain": 0.25
+      }
+    },
+    {
+      "method": "feedback_13",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.0,
+        "gain": 0.5
+      }
+    },
+    {
+      "method": "feedback_14",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.0,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "feedback_15",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.0,
+        "gain": 2.0
+      }
+    },
+    {
+      "method": "feedback_16",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.25,
+        "gain": 0.25
+      }
+    },
+    {
+      "method": "feedback_17",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.25,
+        "gain": 0.5
+      }
+    },
+    {
+      "method": "feedback_18",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.25,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "feedback_19",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.25,
+        "gain": 2.0
+      }
+    },
+    {
+      "method": "feedback_20",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.5,
+        "gain": 0.25
+      }
+    },
+    {
+      "method": "feedback_21",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.5,
+        "gain": 0.5
+      }
+    },
+    {
+      "method": "feedback_22",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.5,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "feedback_23",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.5,
+        "gain": 2.0
+      }
+    },
+    {
+      "method": "feedback_24",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 1.0,
+        "sell_fraction": 0.0,
+        "gain": 0.25
+      }
+    },
+    {
+      "method": "feedback_25",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 1.0,
+        "sell_fraction": 0.0,
+        "gain": 0.5
+      }
+    },
+    {
+      "method": "feedback_26",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 1.0,
+        "sell_fraction": 0.0,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "feedback_27",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 1.0,
+        "sell_fraction": 0.0,
+        "gain": 2.0
+      }
+    },
+    {
+      "method": "feedback_28",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 1.0,
+        "sell_fraction": 0.25,
+        "gain": 0.25
+      }
+    },
+    {
+      "method": "feedback_29",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 1.0,
+        "sell_fraction": 0.25,
+        "gain": 0.5
+      }
+    },
+    {
+      "method": "feedback_30",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 1.0,
+        "sell_fraction": 0.25,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "feedback_31",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 1.0,
+        "sell_fraction": 0.25,
+        "gain": 2.0
+      }
+    },
+    {
+      "method": "feedback_32",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 1.0,
+        "sell_fraction": 0.5,
+        "gain": 0.25
+      }
+    },
+    {
+      "method": "feedback_33",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 1.0,
+        "sell_fraction": 0.5,
+        "gain": 0.5
+      }
+    },
+    {
+      "method": "feedback_34",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 1.0,
+        "sell_fraction": 0.5,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "feedback_35",
+      "family": "feedback",
+      "parameters": {
+        "buy_fraction": 1.0,
+        "sell_fraction": 0.5,
+        "gain": 2.0
+      }
+    },
+    {
+      "method": "nominal_w0",
+      "family": "nominal",
+      "weight": 0.0,
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.25,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "nominal_w0.125",
+      "family": "nominal",
+      "weight": 0.125,
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.25,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "nominal_w0.25",
+      "family": "nominal",
+      "weight": 0.25,
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.25,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "nominal_w0.5",
+      "family": "nominal",
+      "weight": 0.5,
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.25,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "nominal_w0.75",
+      "family": "nominal",
+      "weight": 0.75,
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.25,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "randomized_w0",
+      "family": "randomized",
+      "weight": 0.0,
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.25,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "randomized_w0.125",
+      "family": "randomized",
+      "weight": 0.125,
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.25,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "randomized_w0.25",
+      "family": "randomized",
+      "weight": 0.25,
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.25,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "randomized_w0.5",
+      "family": "randomized",
+      "weight": 0.5,
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.25,
+        "gain": 1.0
+      }
+    },
+    {
+      "method": "randomized_w0.75",
+      "family": "randomized",
+      "weight": 0.75,
+      "parameters": {
+        "buy_fraction": 0.75,
+        "sell_fraction": 0.25,
+        "gain": 1.0
+      }
+    }
+  ],
+  "models": [
+    {
+      "family": "nominal",
+      "training_seed": 0,
+      "steps": 30000,
+      "updates": 29001,
+      "path": "results/confirmation/2026-11-05-robustness/models/nominal/seed-0/policy.pt",
+      "source_path": "results/diagnostics/2026-11-05-sac-feedback/budget-training/seed-0/steps-30000/policy.pt",
+      "sha256": "24def15e30667e34c858c74b02dc1bc59b4cc9ba9bc1d1800b263ed75b18bf0e",
+      "training_distribution": "nominal"
+    },
+    {
+      "family": "nominal",
+      "training_seed": 1,
+      "steps": 30000,
+      "updates": 29001,
+      "path": "results/confirmation/2026-11-05-robustness/models/nominal/seed-1/policy.pt",
+      "source_path": "results/diagnostics/2026-11-05-sac-feedback/budget-training/seed-1/steps-30000/policy.pt",
+      "sha256": "e5a3b0e0b91b18787c69727e035ac778e3141fbf719a93b660f396530683a773",
+      "training_distribution": "nominal"
+    },
+    {
+      "family": "nominal",
+      "training_seed": 2,
+      "steps": 30000,
+      "updates": 29001,
+      "path": "results/confirmation/2026-11-05-robustness/models/nominal/seed-2/policy.pt",
+      "source_path": "results/diagnostics/2026-11-05-sac-feedback/budget-training/seed-2/steps-30000/policy.pt",
+      "sha256": "0e03b949381f0fe144e0ca6e83ba0ced7da457dabdb69e3f891782449b405f93",
+      "training_distribution": "nominal"
+    },
+    {
+      "family": "nominal",
+      "training_seed": 3,
+      "steps": 30000,
+      "updates": 29001,
+      "path": "results/confirmation/2026-11-05-robustness/models/nominal/seed-3/policy.pt",
+      "source_path": "runs/robustness-nominal-extension-20261105/seed-3/steps-30000/policy.pt",
+      "sha256": "8a966edefd59373f5bb70203d1742ca6c6e2da1617187af5b5cb98ba71b1eef7",
+      "training_distribution": "nominal"
+    },
+    {
+      "family": "nominal",
+      "training_seed": 4,
+      "steps": 30000,
+      "updates": 29001,
+      "path": "results/confirmation/2026-11-05-robustness/models/nominal/seed-4/policy.pt",
+      "source_path": "runs/robustness-nominal-extension-20261105/seed-4/steps-30000/policy.pt",
+      "sha256": "82b1ac99a31942a0568babcd9577c64db984ca7f4a38e621d108a68b372a5b79",
+      "training_distribution": "nominal"
+    },
+    {
+      "family": "randomized",
+      "training_seed": 0,
+      "steps": 30000,
+      "updates": 29001,
+      "path": "results/confirmation/2026-11-05-robustness/models/randomized/seed-0/policy.pt",
+      "source_path": "runs/response-randomized-training-20261105/seed-0/policy.pt",
+      "sha256": "aba7e7309fa7dd176fd9029b8a952ca5cb84594218e50ca727c8f55f44f8f610",
+      "training_distribution": {
+        "center_low": 0.8,
+        "center_high": 1.2,
+        "half_width": 0.3,
+        "rng_offset": 9000000
+      }
+    },
+    {
+      "family": "randomized",
+      "training_seed": 1,
+      "steps": 30000,
+      "updates": 29001,
+      "path": "results/confirmation/2026-11-05-robustness/models/randomized/seed-1/policy.pt",
+      "source_path": "runs/response-randomized-training-20261105/seed-1/policy.pt",
+      "sha256": "3dbd94123de5b15166890fd1d9691e742a2de5a9f709abc727bb7a299dd64c2b",
+      "training_distribution": {
+        "center_low": 0.8,
+        "center_high": 1.2,
+        "half_width": 0.3,
+        "rng_offset": 9000000
+      }
+    },
+    {
+      "family": "randomized",
+      "training_seed": 2,
+      "steps": 30000,
+      "updates": 29001,
+      "path": "results/confirmation/2026-11-05-robustness/models/randomized/seed-2/policy.pt",
+      "source_path": "runs/response-randomized-training-20261105/seed-2/policy.pt",
+      "sha256": "6136829478b44e5ad36810a01c7928948fbe86afe1b403593b36090fc7acdb47",
+      "training_distribution": {
+        "center_low": 0.8,
+        "center_high": 1.2,
+        "half_width": 0.3,
+        "rng_offset": 9000000
+      }
+    },
+    {
+      "family": "randomized",
+      "training_seed": 3,
+      "steps": 30000,
+      "updates": 29001,
+      "path": "results/confirmation/2026-11-05-robustness/models/randomized/seed-3/policy.pt",
+      "source_path": "runs/response-randomized-training-20261105/seed-3/policy.pt",
+      "sha256": "c732c60ef8284c98fdf9b1569d8e14cb98400e440cca4bd1366b558f90b11338",
+      "training_distribution": {
+        "center_low": 0.8,
+        "center_high": 1.2,
+        "half_width": 0.3,
+        "rng_offset": 9000000
+      }
+    },
+    {
+      "family": "randomized",
+      "training_seed": 4,
+      "steps": 30000,
+      "updates": 29001,
+      "path": "results/confirmation/2026-11-05-robustness/models/randomized/seed-4/policy.pt",
+      "source_path": "runs/response-randomized-training-20261105/seed-4/policy.pt",
+      "sha256": "a675f8850ae13db35dbcfdd34900e264d94b44a3187512a4c7fc20383dd0a8ed",
+      "training_distribution": {
+        "center_low": 0.8,
+        "center_high": 1.2,
+        "half_width": 0.3,
+        "rng_offset": 9000000
+      }
+    }
+  ],
+  "selection": "Equal-weight validation mixture only; volume-maximizing points under fixed error caps"
+}

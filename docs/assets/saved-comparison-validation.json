@@ -1,0 +1,37 @@
+{
+  "checks": [
+    "saved inference for original and inventory",
+    "play/pause/restart/scrub",
+    "product switching",
+    "active labels resist form edits",
+    "JSON and CSV downloads",
+    "1000-step replay with alternate model and market seeds",
+    "desktop/mobile no horizontal page overflow",
+    "no browser script errors"
+  ],
+  "browser_errors": [],
+  "scenario": "persistent",
+  "market_seed": 43000011,
+  "model_seed": 1,
+  "viewport_desktop": [
+    1440,
+    1100
+  ],
+  "viewport_mobile": [
+    390,
+    844
+  ],
+  "date": "2026-11-07",
+  "files": {
+    "saved-comparison.png": "a76703a1b9043963a071a29434419fc7d7e247ccb6d719cec1c26e06e116c8ac",
+    "saved-comparison-mobile.png": "59f1fe17ce74afb9e20aef9d562e85586b40595b73ef2609fd6b737bdeede9fc"
+  },
+  "implementation_hashes": {
+    "myapp/comparison.py": "9806773c0383a7322f321dde07dda8980e293318739b4e32a9c974099cbc8b27",
+    "myapp/comparison_views.py": "94a8d220d61ec3b06335034daa3ca05d8afca87961a9f1d84098f2dda2aff3da",
+    "myapp/tasks.py": "0e7a7b3cbe90b6daaf05a36bd978bf80400e2094d3502aac0930702973269d45",
+    "myapp/templates/comparison.html": "5ab521fa7f73e14c5872b72c3999ed36bb782c21d8f4444d75f5657d91959114",
+    "statics/js/comparison.js": "9970c2edc0b9143de0062823a2989f0fb9acf991f45c4b3a5dd784e63ee9ba0e",
+    "statics/css/comparison.css": "2f24d72274e25be1c3c0f9dd7226dd198934d268325b3eb26f802b6776278613"
+  }
+}
