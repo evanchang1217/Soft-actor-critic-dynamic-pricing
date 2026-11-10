@@ -38,6 +38,10 @@ jobs:
           node --check statics/js/comparison.js
       - name: Run tests
         run: python -m pytest -q
+      - name: Check frozen reference with alternate NumPy CPU kernels
+        env:
+          NPY_DISABLE_CPU_FEATURES: AVX2,FMA3,AVX512F
+        run: python -m pytest -q tests/test_market_reference.py
       - name: Run the complete four-strategy pipeline
         run: python -m experiments.run --config experiments/configs/quickstart.json --out runs/ci
       - name: Run common-score currency-control smoke pipeline

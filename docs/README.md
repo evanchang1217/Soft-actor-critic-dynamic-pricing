@@ -41,3 +41,7 @@ comparisons, archive safety and maintained study runners. Selected historical
 replays verify saved study statistics; they do not validate real-player behavior
 or repeat all training. See the [experiment guide](experiments.md) for scope and
 archive requirements.
+
+Frozen numerical references use dtype-aware rounding bounds for continuous
+values. Fixture hashes and exogenous task counts remain exact. CI also checks
+the reference with optional NumPy SIMD kernels disabled.
