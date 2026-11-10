@@ -51,7 +51,9 @@ def test_reward_revision_does_not_change_any_market_transition():
         assert first[2:] == second[2:]
         info = first[-1]
         original = -(info["loss_count"] + info["loss_volume"] + 0.5 * info["loss_cpi"] + 0.5 * info["loss_money"])
-        assert first[1] == original
+        # Python 3.12 improved float sum(); algebraically equal reward
+        # expressions can differ by one rounding unit.
+        assert first[1] == pytest.approx(original, rel=1e-14, abs=1e-14)
 
 
 def test_currency_feedback_uses_observed_gold_and_respects_action_limits():

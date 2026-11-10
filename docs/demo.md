@@ -42,6 +42,12 @@ hashes. Each process caches up to twelve completed comparisons. Training and
 comparison reserve the same execution slot, keeping checkpoint construction from
 changing an active training run's PyTorch random stream.
 
+Current trajectories are local inference runs; saved study averages remain the
+historical measurements. Identical seeds do not guarantee identical trajectories
+across CPUs or Python/PyTorch builds: small numerical differences can change a
+discrete trade. Tests check the demo against the source-verified evaluator on
+the same platform, and check displayed study averages against the saved tables.
+
 <details>
 <summary>Preview the comparison page</summary>
 

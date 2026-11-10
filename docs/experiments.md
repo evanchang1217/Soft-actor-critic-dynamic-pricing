@@ -32,6 +32,14 @@ separate complete test replay. Aggregate verifiers reconstruct declared tables,
 check hashes and replay fixed subsets. Timings are checked as stored measurements,
 not expected to reproduce identical noisy values. No verifier retrains SAC.
 
+Source/model/data checksums and stored-table reconstruction are distinct from
+numerical replay. PyTorch does not guarantee identical results across platforms
+([reproducibility notes](https://docs.pytorch.org/docs/stable/notes/randomness.html)).
+Small inference differences can change discrete trades, so strict historical
+replay may require the original numerical environment. CI checks current demo
+behavior against the source-verified evaluator on the same platform, while
+retaining exact source/model and saved-result checks.
+
 ## Full evidence archive
 
 An archive is a compressed, byte-preserved copy of the source, parameters, models

@@ -1,7 +1,7 @@
 """Checks grouped by maintained responsibility."""
 import ast
 import hashlib
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import json
 from pathlib import Path
 from unittest.mock import patch
@@ -16,6 +16,17 @@ import csv
 from django.test import Client
 from myapp.comparison import compare,RECORD
 from rl.sac import SACAgent
+from experiments.behavior_market import BehaviorMarket
+from experiments.behavior_runtime import behavior_for, episode, make_policy
+
+
+def function_fingerprint(node):
+    # The recorded fingerprints use Python 3.10's AST schema. Python 3.12
+    # adds an empty type_params field to ordinary function/class definitions.
+    for child in ast.walk(node):
+        if getattr(child, 'type_params', None) == []:
+            child._fields = tuple(field for field in child._fields if field != 'type_params')
+    return hashlib.sha256(ast.dump(node, include_attributes=False).encode()).hexdigest()
 
 
 def test_saved_demo_runtime_matches_original_function_fingerprints():
@@ -26,7 +37,20 @@ def test_saved_demo_runtime_matches_original_function_fingerprints():
     assert hashlib.sha256(source.encode()).hexdigest()==metadata['runtime_sha256']
     functions={n.name:n for n in ast.parse(source).body if isinstance(n,ast.FunctionDef)}
     for name,expected in metadata['original_function_ast_sha256'].items():
-        assert hashlib.sha256(ast.dump(functions[name],include_attributes=False).encode()).hexdigest()==expected
+        assert function_fingerprint(functions[name])==expected
+
+
+def test_function_fingerprint_normalizes_only_empty_type_parameters():
+    node = ast.parse('def f(x): return x + 1').body[0]
+    expected = function_fingerprint(node)
+    node._fields = (*node._fields, 'type_params')
+    node.type_params = []
+    assert function_fingerprint(node) == expected
+    node._fields = (*node._fields, 'type_params')
+    node.type_params = [ast.Name(id='T', ctx=ast.Load())]
+    assert function_fingerprint(node) != expected
+    changed = ast.parse('def f(x): return x + 2').body[0]
+    assert function_fingerprint(changed) != expected
 
 
 def valid_form():
@@ -226,14 +250,36 @@ def test_api_failures_and_invalid_response_are_clear():
 
 
 @pytest.mark.parametrize('scenario,suite,target,record_scenario',[('original','behavior','original','nominal'),('inventory','behavior','inventory','nominal'),('persistent','stress','original','long_1000')])
-def test_saved_comparison_matches_research_record_without_updates(monkeypatch,scenario,suite,target,record_scenario):
+def test_saved_comparison_matches_frozen_evaluator_without_updates(monkeypatch,scenario,suite,target,record_scenario):
     def forbidden(*args,**kwargs):raise AssertionError('Demo must not train')
     monkeypatch.setattr(SACAgent,'update',forbidden)
     data=compare(scenario,43000010,0)
-    with (Path(RECORD)/'test-episodes.csv').open() as f:rows=list(csv.DictReader(f))
-    for controller,method in zip(data['controllers'],(f'sac_{target}','matched_feedback','matched_pi')):
-        saved=next(r for r in rows if r['suite']==suite and r['target']==target and r['scenario']==record_scenario and r['method']==method and r['evaluation_seed']=='43000010' and r['training_seed']==('0' if controller['name']=='SAC' else ''))
-        for k,v in controller['summary'].items():assert v==pytest.approx(float(saved[k]),rel=1e-10,abs=1e-10)
+    root = Path(RECORD)
+    protocol = json.loads((root/'protocol.json').read_text())
+    frozen = json.loads((root/'frozen-selection.json').read_text())
+    models = json.loads((root/'models.json').read_text())
+    model = next(row for row in models if row['family'] == target and row['training_seed'] == 0)
+    market = MarketConfig.from_dict(protocol['market'])
+    if scenario == 'persistent':
+        market = replace(market, max_steps=1000)
+    specs = [dict(kind='sac', method=f'sac_{target}', path=str(root/model['path'])),
+             {**frozen['choices'][target]['feedback'], 'method':'matched_feedback'},
+             {**frozen['choices'][target]['pi'], 'method':'matched_pi'}]
+    with (root/'report/summary.csv').open() as f:
+        saved_averages = list(csv.DictReader(f))
+    for controller,spec in zip(data['controllers'],specs):
+        # Compare the adapter to the hash/fingerprint-pinned original evaluator
+        # on this platform. CPU kernels can change tiny inference values and
+        # consequently discrete trades; historical rollouts are not bitwise portable.
+        env = BehaviorMarket(market, behavior_for(protocol, target))
+        expected, _, _ = episode(env, make_policy(env, spec), 43000010,
+                                 protocol['low_gold_fraction'])
+        assert controller['summary'] == pytest.approx(expected, rel=1e-10, abs=1e-10)
+        saved = next(row for row in saved_averages if row['suite'] == suite
+                     and row['target'] == target and row['scenario'] == record_scenario
+                     and row['method'] == spec['method'])
+        # Displayed historical study averages remain exactly the saved data.
+        assert controller['batch'] == {key:float(saved[key]) for key in controller['batch']}
         assert len(controller['steps'])==data['steps']
         assert all(f'buy_{i}' in controller['steps'][0] and f'sell_{i}' in controller['steps'][0] for i in range(3))
 
