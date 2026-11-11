@@ -77,5 +77,12 @@ def test_complete_tiny_adaptive_study_and_archive(tmp_path):
     assert result['online_refits'] == 16 and result['new_training_steps'] == 0
     from scripts.report import render_adaptive as render
     render(root)
+    text = (root/'README.md').read_text()
+    assert '16 episodes, 128 physical steps, 80 window summaries and 16 refits' in text
+    assert 'first after 2 periods, then every 2, with at most 4 observations' in text
+    assert '1–2 pre-update, 3–4 adaptation, 5–8 later' in text
+    assert '1 calibration datasets of 8 transitions and 1 inherited SAC policies' in text
+    assert 'horizon 2, 2 sampled futures' in text
+    assert '1 calibration datasets' in read(root/'assessment.json')['scope']
     from scripts.reproduce import reproduce_adaptive as reproduce
     assert reproduce(root, workers=2)['result'] == result

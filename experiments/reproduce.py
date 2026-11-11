@@ -58,7 +58,7 @@ def reproduce(record, output, mode="verify", results_root=None):
         # The source runs in isolation; relative curated data/model paths retain
         # their repository layout. Archived evaluators only write to output.
         (archived / "results").symlink_to(results_root or repo / "results", target_is_directory=True)
-        env = {**os.environ, "PYTHONPATH": str(archived), "MPLBACKEND": "Agg",
+        env = {**os.environ, "PYTHONOPTIMIZE": "0", "PYTHONPATH": str(archived), "MPLBACKEND": "Agg",
                "MPLCONFIGDIR": str(archived / ".matplotlib")}
         if mode == "verify":
             # Keep four parent levels for the diagnostic verifier's repo lookup.

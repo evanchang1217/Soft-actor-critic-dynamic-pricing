@@ -14,6 +14,23 @@ except ModuleNotFoundError as exc:
     from experiments.feature_screen import read,sha,csv_read,csv_write,aggregate
 from rl.artifacts import write_json
 
+def record_dimensions(root, protocol):
+    rows = csv_read(root/'episodes.csv')
+    keys = ('case', 'method', 'size', 'replicate', 'model_seed', 'market_seed')
+    episodes = len({tuple(row.get(key, '') for key in keys) for row in rows})
+    inherited = (root/'parent/models.json').exists()
+    models = read(root/('parent/models.json' if inherited else 'models.json'))
+    models = [model for model in models
+              if model['replicate'] in protocol['calibration_replicates']
+              and model['seed'] in protocol['training_seeds']
+              and (not inherited or model['size'] == protocol['calibration_size'])]
+    return dict(datasets=len(protocol['calibration_replicates']),
+                seeds=len(protocol['training_seeds']), markets=len(protocol['evaluation_seeds']),
+                cases=len(protocol['cases']), models=len(models),
+                training_steps=sum(model['steps'] for model in models), episodes=episodes,
+                steps=episodes*protocol['evaluation_steps'], summaries=len(rows),
+                refits=len(csv_read(root/'updates.csv')) if (root/'updates.csv').exists() else 0)
+
 def planner_gaps(root):
     p = read(root/'protocol.json'); rows = csv_read(root/'episodes.csv')
     lookup = {(r['case'], r['method'], int(r['size']), int(r['replicate']), int(r['market_seed'])):r
@@ -59,6 +76,7 @@ def auxiliary_tables(root):
 
 def render_model_error(root):
     root = Path(root); p = read(root/'protocol.json'); fits = read(root/'fits.json')
+    d = record_dimensions(root, p)
     summaries = csv_read(root/'summary.csv'); contrasts = csv_read(root/'contrasts.csv')
     degradation = csv_read(root/'degradation.csv'); largest = max(p['calibration_sizes'])
     def summary(case, method, size=largest):
@@ -80,13 +98,13 @@ def render_model_error(root):
         'Nominal reward and robustness to model error are distinct questions. Prediction quality, degradation under unseen parameters and stronger-planner comparisons are reported below.', '',
         '## Frozen design and information', '',
         '- Aggregate two-good NPC shop, shared instantaneous production, six-period warehouses, no expiry; same physical equations/reward as the preceding stationary study.',
-        '- Three independent exploratory logging datasets; nested 48/384 public transitions per dataset (48 is half an episode; 384 is four 96-step episodes). Bounded random target prices change every eight periods.',
+        f'- {d["datasets"]} independent exploratory logging datasets; nested '+ '/'.join(map(str, p['calibration_sizes'])) +' public transitions per dataset. Bounded random target prices change every eight periods in 96-period logging episodes.',
         '- Estimate only demand slope, production reservation price and recipe-switch probability. Functional equations, production capacity, demand-arrival/noise laws, cash/stock constraints and all other constants are shared correct prior knowledge.',
         '- Fit public realized supply/sales with censoring and cash constraints. Do not read rejected demand, latent productivity/preference or true parameters. Forward least squares uses conditional-median noise, not an exact likelihood.',
-        '- Each fitted model trains three unchanged SAC initialization seeds, 24,576 synthetic interactions each, stationary inputs from the first replay sample. No checkpoint/test selection or online updates.',
-        '- SAA8: 82 first moves, hold/feedback continuation, horizon 12, eight independently sampled forecast scenarios. SAA64 uses 64 scenarios on nominal/combined cases at the larger data size. Finite search and continuation assumptions remain.',
+        f'- Each fitted model trains {d["seeds"]} SAC initialization seeds, {p["training_episodes"]*p["training_steps_per_episode"]:,} synthetic interactions each, stationary inputs from the first replay sample. No checkpoint/test selection or online updates.',
+        f'- Main planner (`SAA8` method ID): 82 first moves, hold/feedback continuation, horizon {p["planner"]["horizon"]}, {p["planner"]["particles"]} sampled futures. Supplement (`SAA64` ID): horizon {p["planner_supplement"]["horizon"]}, {p["planner_supplement"]["particles"]} futures on nominal/combined cases at the larger data size.',
         '- Oracle-labeled planners know the correct structural parameters, but never actual future shocks. Fitted controllers remain frozen in every case. PI gains are frozen from the earlier study, not retuned on these tests.',
-        '- Five cases, four fresh paired evaluation markets, 384 periods each. Primary endpoint is periods 97–384; all first/full windows are retained. Market shifts apply from test period one, rather than a hidden within-episode parameter change.',
+        f'- {d["cases"]} cases, {d["markets"]} fresh paired evaluation markets, {p["evaluation_steps"]} periods each. Primary endpoint is periods {p["early_window"]+1}–{p["evaluation_steps"]}; all first/full windows are retained. Market shifts apply from test period one.',
         '- Shared logged data and prior knowledge do not imply matched compute: SAC has extra offline simulation/training; planning spends compute online. This entire SAC pipeline depends on a fitted simulator despite its model-free policy-learning algorithm.', '',
         '## Parameter estimates', '',
         '| Transitions | Dataset | Slope (true 5) | Reservation (true 7.5) | Switch probability (true .06) |',
@@ -98,7 +116,7 @@ def render_model_error(root):
     if (root/'prediction-audit/prediction.csv').exists():
         audit = csv_read(root/'prediction-audit/prediction.csv')
         lines += ['', '### Independent prediction audit', '',
-            'Two new exploratory logs per case provide 768 public states, never used for fitting, tuning, training or test selection. Structural RMSE compares the estimated model with the correct conditional-median equations at the same states, including joint supply and sales clipping. It is neither realized-noise error nor a long-run control-value error.', '',
+            'Independent exploratory logs provide public states never used for fitting, tuning, training or test selection. Structural RMSE compares the estimated model with the correct conditional-median equations at the same states, including joint supply and sales clipping. It is neither realized-noise error nor a long-run control-value error.', '',
             '| Case | Transitions | Supply structural RMSE (units/good/period) | Sales structural RMSE | Switch probability absolute error |',
             '| --- | --- | --- | --- | --- |']
         for case in p['cases']:
@@ -106,8 +124,8 @@ def render_model_error(root):
                 group = [r for r in audit if r['case'] == case and int(r['size']) == size]
                 means = [np.mean([float(r[m]) for r in group]) for m in ('supply_structural_rmse', 'sales_structural_rmse', 'switch_probability_absolute_error')]
                 lines.append(f'| {case} | {size} | {means[0]:.5f} | {means[1]:.5f} | {means[2]:.5f} |')
-    lines += ['', 'These synthetic observations identify the two smooth behavioral parameters accurately even with 48 transitions; switch probability remains noisier. This study does not create a large estimation error or establish that real-player behavior is identifiable.', '',
-              '## Later-window results at 384 calibration transitions', '',
+    lines += ['', 'The estimate tables and prediction audit quantify model error within the known synthetic equation family; they do not establish real-player identifiability.', '',
+              f'## Later-window results at {largest} calibration transitions', '',
               '| Case | FeedbackController | Reward ↑ | Task completion % ↑ | Mean currency error % ↓ |',
               '| --- | --- | --- | --- | --- |']
     for case in p['cases']:
@@ -137,7 +155,7 @@ def render_model_error(root):
     for r in degradation:
         lines.append(f'| {r["size"]} | {r["case"]} | {float(r["sac_change"]):+.5f} | {float(r["planner_change"]):+.5f} | {float(r["difference"]):+.5f} [{float(r["lower"]):+.5f}, {float(r["upper"]):+.5f}] |')
     lines += ['', '## Limits and interpretation', '',
-        'Crossed bootstrap resamples calibration datasets, common training initialization seeds and evaluation market seeds. Planners are broadcast over initialization seeds, not counted as extra independent runs. Only three calibration replicates and three initialization seeds make intervals exploratory; comparisons are pointwise without multiplicity correction. Do not pool them with the previous five-seed confirmation.', '',
+        f'Crossed bootstrap resamples {d["datasets"]} calibration datasets, {d["seeds"]} common initialization seeds and {d["markets"]} evaluation markets. Planners are broadcast over initialization seeds, not counted as extra independent runs. Intervals are exploratory and pointwise without multiplicity correction; do not pool them with the previous confirmation.', '',
         'An absolute SAC reward advantage does not establish smaller sensitivity to model error. Compare changes from nominal and fitted-versus-oracle planning. These reward changes include changed task difficulty, so differential degradation is a performance measure, not an isolated causal mechanism. Increasing logged data does not guarantee monotonic RL improvement under finite training.', '',
         'This is model estimation within a correct functional family, not structural model misspecification, online adaptation, real-player calibration, or a proof of universal RL superiority. All baseline scores, seed failures and transfer cases are retained.', '',
         '## Reproduction and artifacts', '',
@@ -151,9 +169,7 @@ def render_model_error(root):
         'python -m experiments.model_error_study --phase verify --out /tmp/new-model-error-study',
         'python scripts/reproduce.py --study model-error --record results/diagnostics/2026-11-09-model-error-study',
         '```', '',
-        'Frozen protocol/source manifests, all public calibration logs, parameter fits, 18 final checkpoints and training curves, complete compressed evaluation traces, every episode/window, contrasts, degradation tables, independent replay verification and archived source execution are retained. See `verification.json` and `archive-verification.json` for actual verification status.', '',
-        'Execution scheduling: this record precomputes fixed baselines during SAC training using `python -m scripts.run_model_error_evaluation --phase precompute`, then assembles those hash-checked results with learned-policy rollouts using `--phase finish`. `evaluation-cache/` retains the exact scheduling source, plan, identities, per-job outputs and hashes. A tiny end-to-end test establishes equality with ordinary sequential evaluation, and the core verifier reconstructs/replays the assembled results independently.', '',
-        'Runtime note: the checkout’s original virtualenv points at a missing `/usr/bin/python`. This run uses locally cached CPython 3.10.21 and the existing virtualenv packages through a temporary environment; the original environment is unchanged. The manifest records actual package/interpreter versions.', '',
+        f'Frozen protocols, source manifests, calibration logs, parameter fits, {d["models"]} final checkpoints and training curves, compressed traces and {d["summaries"]:,} window summaries are retained. See `verification.json` and `archive-verification.json` for actual verification status; `manifest.json` records the execution environment.', '',
         '![Model estimation and transfer](model-error.png)', '',
     ]
     (root/'README.md').write_text('\n'.join(lines), encoding='utf-8')
@@ -188,6 +204,8 @@ def render_model_error(root):
 
 def render_adaptive(root):
     root = Path(root); p = read(root/'protocol.json'); summary = csv_read(root/'summary.csv'); contrasts = csv_read(root/'contrasts.csv')
+    d = record_dimensions(root, p)
+    first_update = ((p['minimum_observations']+p['update_interval']-1)//p['update_interval'])*p['update_interval']
     histories, costs = auxiliary_tables(root)
     csv_write(root/'estimate-quality.csv', histories); csv_write(root/'cpu-summary.csv', costs)
     def row(case, method, window='later'):
@@ -200,24 +218,24 @@ def render_adaptive(root):
         'negative interval':'the exploratory interval supports lower SAC reward',
         'superiority not established':'the interval crosses zero, so SAC superiority is not established'}[classification]
     assessment = dict(primary=primary, sac_minus_online64_combined=sac64, classification=classification,
-                      scope='Exploratory pointwise intervals, three calibration datasets, three existing initialization seeds and four fresh markets.')
+                      scope=f'Exploratory pointwise intervals, {d["datasets"]} calibration datasets, {d["seeds"]} initialization seeds and {d["markets"]} fresh markets.')
     write_json(root/'assessment.json', assessment)
     lines = ['# Periodic model refitting versus frozen planning', '',
         '## Findings and scope', '',
-        'The market, reward and inherited SAC policies are fixed. Planning alone updates its model from observed transactions: first after 32 periods, then every 16, with at most 64 observations. Insufficiently identified demand/production parameters retain their previous values. True parameters and future outcomes are unavailable.', '',
+        f'The market, reward and inherited SAC policies are fixed. Planning updates its model first after {first_update} periods, then every {p["update_interval"]}, with at most {p["rolling_window"]} observations. Insufficiently identified parameters retain previous values. True parameters and future outcomes are unavailable.', '',
         f'Under the combined shift, later reward for online SAA8 minus frozen SAA8 is **{float(primary["difference"]):+.5f}**, exploratory 95% interval **[{float(primary["lower"]):+.5f}, {float(primary["upper"]):+.5f}]**.', '',
         f'For the same case, SAC minus online SAA64 is **{float(sac64["difference"]):+.5f}**, interval **[{float(sac64["lower"]):+.5f}, {float(sac64["upper"]):+.5f}]**; {explanation}.', '',
         'This compares particular complete control pipelines, not the limits of all RL. Earlier frozen-model findings remain valid within their original conditions.', '',
         '## Frozen design', '',
-        '- Same aggregate two-good market, reward, 82 first moves, two continuations and horizon 12 as the parent study. All prior code/data are retained.',
-        '- Three 384-transition calibration datasets and all nine associated SAC policies; no retraining, checkpoint selection or controller retuning.',
-        '- Four new paired evaluation markets, five parameter cases, 384 periods each. Parameters differ from calibration from period one and remain fixed within an episode; observable task recipes switch.',
-        '- Main SAA8 families are frozen, online-refitting and correct-parameter references. SAA64 supplement covers nominal/combined cases. Frozen PI is retained.',
-        '- Public observed supply/sales, inventories, cash, prices and recipes feed the same censored estimator. A 16-point identifiability gate can retain prior behavioral parameters. All applied estimates, gates and used-data indices are saved.',
-        '- Model updates preserve integral memory and private forecast RNG. Before the first update, online/frozen planners match. Refitting changes actions from period 33 onward.',
-        '- Windows: 1–32 pre-update, 33–96 adaptation, 97–384 later, first 96, and full. This record has 396 episodes, 152,064 physical steps, 1,980 window summaries and 1,932 refits.',
-        '- Online planning retains a 64-period estimation window; inherited SAC uses two-frame inputs with fixed weights. Available stream type is shared, but memory and online computation differ.',
-        '- The nine selected policies originally used 221,184 synthetic training interactions. Additional training here is zero. Model refitting/planning compute is recorded separately.', '',
+        f'- Aggregate two-good market, 82 first moves, two continuations; main horizon {p["planner"]["horizon"]}, {p["planner"]["particles"]} sampled futures.',
+        f'- {d["datasets"]} calibration datasets of {p["calibration_size"]} transitions and {d["models"]} inherited SAC policies; no retraining or checkpoint selection.',
+        f'- {d["markets"]} paired evaluation markets, {d["cases"]} cases, {p["evaluation_steps"]} periods each. Parameters differ from calibration from period one; task recipes switch.',
+        f'- Main planner IDs retain the `8` suffix; supplement IDs retain `64` and use horizon {p["planner_supplement"]["horizon"]}, {p["planner_supplement"]["particles"]} futures on '+', '.join(p['supplement_cases'])+'. Frozen PI is retained.',
+        f'- Public transactions feed the censored estimator. A {p["minimum_identifying_points"]}-point identifiability gate can retain prior behavioral parameters; all estimates and used-data indices are saved.',
+        f'- Model updates preserve integral memory and private forecast RNG. Online/frozen planners match before the first update; refitting can change actions from period {first_update+1}.',
+        f'- Windows: 1–{p["minimum_observations"]} pre-update, {p["minimum_observations"]+1}–{p["early_window"]} adaptation, {p["early_window"]+1}–{p["evaluation_steps"]} later, first {p["early_window"]}, and full. This record has {d["episodes"]:,} episodes, {d["steps"]:,} physical steps, {d["summaries"]:,} window summaries and {d["refits"]:,} refits.',
+        f'- Online planning retains a {p["rolling_window"]}-period estimation window; SAC uses fixed weights and two-frame inputs. Memory and online computation differ.',
+        f'- The {d["models"]} selected policies originally used {d["training_steps"]:,} synthetic interactions. Additional training here is zero; refitting/planning compute is recorded separately.', '',
         '## Later-window results', '',
         '| Market | Method | Reward ↑ | Task completion % ↑ | Currency error % ↓ |',
         '| --- | --- | ---: | ---: | ---: |']
@@ -233,7 +251,7 @@ def render_adaptive(root):
     for r in contrasts:
         if r['metric'] != 'mean_reward' or r['window'] == 'pre_update': continue
         lines.append(f'| {r["case"]} | {r["window"]} | {r["method"]} − {r["baseline"]} | {float(r["difference"]):+.5f} | [{float(r["lower"]):+.5f}, {float(r["upper"]):+.5f}] |')
-    lines += ['', 'Crossed intervals resample calibration datasets, common SAC initialization seeds and markets. Planner copies over initialization seeds are not independent samples. Only three calibration datasets and four markets make these pointwise intervals exploratory; they are not multiplicity-adjusted or pooled with earlier studies.', '',
+    lines += ['', f'Crossed intervals resample {d["datasets"]} calibration datasets, {d["seeds"]} common SAC initialization seeds and {d["markets"]} markets. Planner copies over initialization seeds are not independent samples. These pointwise intervals are exploratory, without multiplicity adjustment or pooling with earlier studies.', '',
         '## Learned parameter histories', '',
         'The plotted bands show observed trajectory spread, not confidence bands. Ground-truth parameters enter analysis only. `estimate-quality.csv` retains every update-time mean, spread, absolute parameter error and acceptance rate; `updates.csv` retains every original update.', '',
         '| Market | Method | After period | Estimated slope | Estimated reservation | Estimated switch probability |',
@@ -286,6 +304,7 @@ def render_adaptive(root):
 
 def render_compute(root):
     root = Path(root); p = read(root/'protocol.json')
+    d = record_dimensions(root, p)
     quality = csv_read(root/'frontier.csv'); costs = csv_read(root/'common-costs.csv')
     contrasts = csv_read(root/'contrasts.csv'); crossovers = csv_read(root/'break-even.csv')
     training = csv_read(root/'training-cost.csv'); samples = csv_read(root/'decision-samples.csv')
@@ -298,12 +317,12 @@ def render_compute(root):
     def number_or_dash(value,places=1): return '—' if value == '' else f'{float(value):,.{places}f}'
     lines = ['# Control-quality / CPU trade-off and training-cost remeasurement', '',
         '## Findings and scope', '',
-        'Six planning budgets are evaluated with the same market, reward, online estimator and nine fixed SAC policies. PI remains included: faster inference than heavy planning does not make SAC the fastest controller.', '',
+        f'{len(p["planners"])} planning budgets are evaluated with the same market, reward, online estimator and {d["models"]} fixed SAC policies. PI remains included: faster inference than heavy planning does not make SAC the fastest controller.', '',
         'Quality uses fresh paired markets. CPU is measured separately on common public states and histories; these probes do not imply identical policy trajectories.', '',
         f'Historical training duration was not recorded. The {len(training)} exact-setting timed replays measure a median of **{median_training:.2f} CPU seconds per policy** on the current host. Replayed weights and curves match the originals; evaluated policies are unchanged. These are remeasurements, not historical durations.', '',
         'CPU amortization concerns cumulative computation, not equal control quality or real-game benefit. Online fitting assumes the known equation family. No real-player data calibrate this study.', '',
         '## Quality and common-state cost', '',
-        'Mean online CPU includes decision plus amortized observe/refit. Higher reward is better. All six planning budgets update parameters identically; only horizon/scenario count differs.', '',
+        f'Mean online CPU includes decision plus amortized observe/refit. Higher reward is better. All {len(p["planners"])} planning budgets update parameters identically; only horizon/scenario count differs.', '',
         '| Method | Online CPU ms/period | Nominal reward | Combined-shift reward |',
         '| --- | ---: | ---: | ---: |']
     for c in costs:
@@ -338,8 +357,8 @@ def render_compute(root):
     lines += ['',
         f'These timed replays consume {sum(int(r["steps"]) for r in training):,} extra simulated interactions and {sum(int(r["updates"]) for r in training):,} updates. They are reproduction/cost measurements, not additional performance training or selection. CPU and wall durations are measured on the current shared host; wall time is affected by parallel work. Imports are excluded, full training-function initialization/simulation/learning/saving are included.', '',
         '## Frozen evaluation and profiling design', '',
-        f'- Quality: {len(csv_read(root/"episodes.csv"))//5} fresh-market episodes, {len(p["cases"])} cases, {len(p["evaluation_seeds"])} paired markets, three fitted calibration models, all nine inherited SAC policies and all planning budgets. Initial/adaptation/later/full windows are retained. No prior test markets are pooled.',
-        '- Every planner uses the prior 82 first actions and hold/feedback continuations. Correct functional equations, other constants and noise laws are shared prior knowledge. The online estimator has the same 32-observation warmup, 16-period update interval, 64-period memory and identifiability gates. SAC retains its two-frame input and fixed weights.',
+        f'- Quality: {d["episodes"]} fresh-market episodes, {d["cases"]} cases, {d["markets"]} paired markets, {d["datasets"]} fitted calibration models and {d["models"]} inherited SAC policies. Later reward uses periods {p["early_window"]+1}–{p["evaluation_steps"]}; other windows remain available. No prior test markets are pooled.',
+        f'- Every planner uses 82 first actions and hold/feedback continuations. The known equation family and noise laws are shared prior knowledge. Estimation uses a {p["minimum_observations"]}-observation minimum, {p["update_interval"]}-period update interval, {p["rolling_window"]}-period memory and {p["minimum_identifying_points"]}-point gate. SAC retains two-frame inputs and fixed weights.',
         f'- Speed: {len(read(root/"common-states.json"))} common PI-visited states/histories, one warmup and {p["timing_repetitions"]} measured calls per method/model/state; {len(samples):,} retained decision samples. Counterfactual planner integral memory is zero and its private forecast RNG is fresh. Preparation/loading/construction are outside the timer; encoding/public-state reconstruction/search/inference inside `act` are included.',
         '- The identical observation/refit function is timed once across common histories. Update and ordinary-observation samples are combined at the declared 1/'+str(p['update_interval'])+' update rate; they are not equally weighted despite balanced audit positions. All observation samples and actual-rollout costs remain visible.',
         '- Benchmarking follows completion of the heavy evaluation/training phases and uses one Torch thread. Local process CPU is not production latency or a total-compute-matched comparison. Private planner forecast seed is fixed as in the prior study; rankings are conditional on the tested implementation.',
@@ -357,7 +376,7 @@ def render_compute(root):
         'python scripts/report.py --study compute --record /tmp/new-compute-record',
         'python scripts/reproduce.py --study compute --record /tmp/new-compute-record --workers 6',
         '```', '',
-        'The archive verifies stored timings and their arithmetic; it does not rerun noisy timing or three full trainings. It reconstructs common audit states, selected timing actions, exact replayed weights/curves, every summary/interval and a fixed subset of complete control/update trajectories.', '',
+        f'The archive verifies stored timings and arithmetic; it does not rerun noisy timing or the {len(training)} full trainings. It reconstructs common audit states, selected timing actions, replayed weights/curves, summaries/intervals and a fixed subset of complete trajectories.', '',
         '![Quality / online CPU and conditional amortization](compute-tradeoff.png)', '']
     (root/'README.md').write_text('\n'.join(lines),encoding='utf-8')
     import matplotlib

@@ -14,7 +14,7 @@ import numpy as np
 import torch
 
 from rl.artifacts import write_json
-from .common import read, sha, csv_read, csv_write, aggregate, compare_tables
+from .common import read, sha, csv_read, csv_write, aggregate, compare_tables, require, evaluation_run
 from .model_error_study import market, load_agent, train_one, NOMINAL
 from .adaptive_planning import (SOURCES as PRIOR_SOURCES, IDENTITY, OnlinePlanner,
     initialize as base_initialize, resolve as base_resolve, check, windows)
@@ -26,13 +26,16 @@ SOURCES = PRIOR_SOURCES + ('experiments/compute_tradeoff.py',)
 def resolve(raw):
     p = base_resolve(raw)
     names = [x['method'] for x in p['planners']]
-    assert names and len(names) == len(set(names)) and not set(names) & {'sac', 'pi'}
-    assert all(x['horizon'] >= 1 and x['particles'] >= 2 for x in p['planners'])
-    assert p['timing_repetitions'] >= 1 and min(p['audit_steps']) > p['minimum_observations']
-    assert max(p['audit_steps']) < p['evaluation_steps']
-    assert not set(p['audit_markets']) & set(p['evaluation_seeds'])
-    assert any(t % p['update_interval'] == 0 for t in p['audit_steps'])
-    assert any(t % p['update_interval'] != 0 for t in p['audit_steps'])
+    require(names and len(names) == len(set(names)) and not set(names) & {'sac', 'pi'},
+            'Invalid compute budget or audit protocol')
+    require(all(x['horizon'] >= 1 and x['particles'] >= 2 for x in p['planners']),
+            'Invalid compute budget or audit protocol')
+    require(p['timing_repetitions'] >= 1 and min(p['audit_steps']) > p['minimum_observations'],
+            'Invalid compute budget or audit protocol')
+    require(max(p['audit_steps']) < p['evaluation_steps'], 'Invalid compute budget or audit protocol')
+    require(not set(p['audit_markets']) & set(p['evaluation_seeds']), 'Invalid compute budget or audit protocol')
+    require(any(t % p['update_interval'] == 0 for t in p['audit_steps']), 'Invalid compute budget or audit protocol')
+    require(any(t % p['update_interval'] != 0 for t in p['audit_steps']), 'Invalid compute budget or audit protocol')
     return p
 
 
@@ -40,7 +43,8 @@ def initialize(root, config, parent):
     p = resolve(read(config)); parent = Path(parent)
     root = base_initialize(root, config, parent)
     previous = read(parent/'protocol.json')
-    assert not set(p['evaluation_seeds']+p['audit_markets']) & set(previous['evaluation_seeds'])
+    require(not set(p['evaluation_seeds']+p['audit_markets']) & set(previous['evaluation_seeds']),
+            'Invalid parent models or overlapping evaluation seeds')
     hashes = read(root/'source-hashes.json'); repo = Path(__file__).resolve().parents[1]
     name = 'experiments/compute_tradeoff.py'; shutil.copyfile(repo/name, root/'source'/name); hashes[name] = sha(repo/name)
     write_json(root/'source-hashes.json', hashes)
@@ -102,10 +106,12 @@ def evaluate_one(root, identity):
     return rows, trace, updates, dict(**identity, decisions=p['evaluation_steps'], decision_cpu_seconds=decision, observation_cpu_seconds=observation)
 
 
+@evaluation_run(
+    inputs=('protocol.json', 'source-hashes.json', 'parent-hashes.json'),
+    outputs=('steps.csv.gz', 'episodes.csv', 'updates.csv', 'rollout-costs.csv',
+             'summary.csv', 'data-hashes.json'))
 def run(root, workers=1):
     root = Path(root); check(root); work = jobs(root)
-    if (root/'evaluation-start.json').exists(): raise FileExistsError('Evaluation exists')
-    write_json(root/'evaluation-start.json', {n:sha(root/n) for n in ('protocol.json','source-hashes.json','parent-hashes.json')})
     records = []; updates = []; costs = []
     with ProcessPoolExecutor(max_workers=workers) as pool, gzip.open(root/'steps.csv.gz','wt',newline='') as stream:
         futures = [pool.submit(evaluate_one,str(root),j) for j in work]; writer = None
@@ -193,7 +199,8 @@ def timed_training_one(root, identity):
     cpu = time.process_time()-start_cpu; wall = time.perf_counter()-start_wall
     old = torch.load(root/'parent'/original['path'],map_location='cpu',weights_only=True)
     new = torch.load(root/'training-replay'/replay['path'],map_location='cpu',weights_only=True)
-    assert all(torch.equal(value,new['policy'][key]) for key,value in old['policy'].items())
+    require(all(torch.equal(value,new['policy'][key]) for key,value in old['policy'].items()),
+            'Replayed policy differs from original')
     curve = str(Path(original['path']).parent/'training.csv')
     compare_tables(csv_read(root/'parent'/curve),csv_read(root/'training-replay'/curve))
     return dict(**identity,steps=replay['steps'],updates=replay['updates'],cpu_seconds=cpu,wall_seconds=wall,
@@ -261,29 +268,38 @@ def analyze(root):
 def verify(root, workers=1):
     root = Path(root); check(root); p = resolve(read(root/'protocol.json')); torch.set_num_threads(1)
     for manifest in ('data-hashes.json','benchmark-hashes.json','training-cost-hashes.json','analysis-hashes.json'):
-        for name,digest in read(root/manifest).items(): assert sha(root/name) == digest
+        for name,digest in read(root/manifest).items():
+            require(sha(root/name) == digest,
+                    'Saved evidence hash mismatch')
     work = jobs(root); keys = {tuple(str(j[k]) for k in IDENTITY) for j in work}; records = csv_read(root/'episodes.csv')
-    lookup = {tuple(r[k] for k in IDENTITY)+(r['window'],):r for r in records}; assert len(records) == len(lookup) == 5*len(work)
+    lookup = {tuple(r[k] for k in IDENTITY)+(r['window'],):r for r in records}
+    require(len(records) == len(lookup) == 5*len(work),
+            'Saved research evidence is inconsistent')
     changes = csv_read(root/'updates.csv'); retained = {}; seen = set()
     chosen = [j for j in work if j['market_seed'] == p['evaluation_seeds'][0] and j['replicate'] in (-1,p['calibration_replicates'][0]) and j['model_seed'] in (-1,p['training_seeds'][0])]
     chosen_keys = {tuple(str(j[k]) for k in IDENTITY) for j in chosen}
     with gzip.open(root/'steps.csv.gz','rt') as stream:
         for key,group in groupby(csv.DictReader(stream),key=lambda r:tuple(r[k] for k in IDENTITY)):
-            assert key in keys and key not in seen; seen.add(key)
+            require(key in keys and key not in seen, 'Saved research evidence is inconsistent'); seen.add(key)
             trace = [{k:float(v) for k,v in r.items() if k not in IDENTITY} for r in group]
-            assert [int(r['step']) for r in trace] == list(range(1,p['evaluation_steps']+1))
+            require([int(r['step']) for r in trace] == list(range(1,p['evaluation_steps']+1)),
+                    'Saved research evidence is inconsistent')
             for r in trace:
-                assert abs(r['cash_residual']) < 1e-7 and r['goods_residual'] < 1e-7
-                assert abs(r['reward']+sum(r[k] for k in ('money_cost','service_cost','inventory_cost','price_cost','waste_cost'))) < 1e-8
+                require(abs(r['cash_residual']) < 1e-7 and r['goods_residual'] < 1e-7,
+                        'Saved research evidence is inconsistent')
+                require(abs(r['reward']+sum(r[k] for k in ('money_cost','service_cost','inventory_cost','price_cost','waste_cost'))) < 1e-8,
+                        'Saved research evidence is inconsistent')
             for window,summary in windows(p,trace):
                 for name,value in summary.items(): np.testing.assert_allclose(value,float(lookup[key+(window,)][name]),atol=1e-9)
             updates = [r for r in changes if tuple(r[k] for k in IDENTITY) == key]
             if key[1] not in ('pi','sac'):
-                assert [int(r['after_step']) for r in updates] == [t for t in range(1,p['evaluation_steps']+1) if t >= p['minimum_observations'] and t%p['update_interval'] == 0]
-                assert all(int(r['last_used_step']) == int(r['after_step']) and int(r['n']) <= p['rolling_window'] for r in updates)
-            else: assert not updates
+                require([int(r['after_step']) for r in updates] == [t for t in range(1,p['evaluation_steps']+1) if t >= p['minimum_observations'] and t%p['update_interval'] == 0],
+                        'Saved research evidence is inconsistent')
+                require(all(int(r['last_used_step']) == int(r['after_step']) and int(r['n']) <= p['rolling_window'] for r in updates),
+                        'Saved research evidence is inconsistent')
+            else: require(not updates, 'Saved research evidence is inconsistent')
             if key in chosen_keys: retained[key] = trace,updates
-    assert seen == keys
+    require(seen == keys, 'Saved research evidence is inconsistent')
     with ProcessPoolExecutor(max_workers=workers) as pool:
         futures = [pool.submit(evaluate_one,str(root),j) for j in chosen]
         for identity,future in zip(chosen,futures):
@@ -292,11 +308,15 @@ def verify(root, workers=1):
                 for k in a: np.testing.assert_allclose(a[k],b[k],atol=1e-8,rtol=1e-8)
             compare_tables(saved,updates)
     compare_tables(csv_read(root/'summary.csv'),aggregate(records,['case','method','window']))
-    states = common_states(root); assert states == read(root/'common-states.json')
+    states = common_states(root)
+    require(states == read(root/'common-states.json'),
+            'Saved research evidence is inconsistent')
     samples = csv_read(root/'decision-samples.csv'); observe = csv_read(root/'observation-samples.csv')
     groups_per_state = len(p['calibration_replicates'])*(len(p['planners'])+len(p['training_seeds']))+1
-    assert len(samples) == len(states)*groups_per_state*p['timing_repetitions']
-    assert len(observe) == len(states)*len(p['calibration_replicates'])*p['timing_repetitions']
+    require(len(samples) == len(states)*groups_per_state*p['timing_repetitions'],
+            'Saved research evidence is inconsistent')
+    require(len(observe) == len(states)*len(p['calibration_replicates'])*p['timing_repetitions'],
+            'Saved research evidence is inconsistent')
     for row in samples:
         if row['repetition'] != '1' or row['state'] != '0': continue
         state = states[0]; method = row['method']; r = int(row['replicate']); s = int(row['model_seed'])
@@ -304,22 +324,24 @@ def verify(root, workers=1):
         obs = np.asarray(state['observation'],np.float32); action = policy.act(obs,deterministic=True) if method == 'sac' else policy.act(obs)
         np.testing.assert_allclose(action,[float(row[f'action{i}']) for i in range(4)],atol=1e-8)
     training = csv_read(root/'training-cost.csv')
-    assert len(training) == len(p['training_replays'])
+    require(len(training) == len(p['training_replays']), 'Saved research evidence is inconsistent')
     for row in training:
         original = torch.load(root/'parent'/row['original_path'],map_location='cpu',weights_only=True)
         new = torch.load(root/'training-replay'/row['path'],map_location='cpu',weights_only=True)
-        assert all(torch.equal(v,new['policy'][k]) for k,v in original['policy'].items())
-        assert new['steps'] == int(row['steps']) == original['steps'] and new['updates'] == int(row['updates']) == original['updates']
+        require(all(torch.equal(v,new['policy'][k]) for k,v in original['policy'].items()),
+                'Saved research evidence is inconsistent')
+        require(new['steps'] == int(row['steps']) == original['steps'] and new['updates'] == int(row['updates']) == original['updates'],
+                'Saved research evidence is inconsistent')
         curve = str(Path(row['path']).parent/'training.csv'); compare_tables(csv_read(root/'parent'/curve),csv_read(root/'training-replay'/curve))
     for name,rows in zip(('common-costs.csv','contrasts.csv','frontier.csv','break-even.csv'),tables(root)):
         # Optional break-even values are blank in CSV and None in memory.
         if name == 'break-even.csv':
             saved = csv_read(root/name)
-            assert len(saved) == len(rows)
+            require(len(saved) == len(rows), 'Saved research evidence is inconsistent')
             for a,b in zip(saved,rows):
                 for k,v in b.items():
-                    if v is None: assert a[k] == ''
-                    elif isinstance(v,str): assert a[k] == v
+                    if v is None: require(a[k] == '', 'Saved research evidence is inconsistent')
+                    elif isinstance(v,str): require(a[k] == v, 'Saved research evidence is inconsistent')
                     else: np.testing.assert_allclose(float(a[k]),v)
         else: compare_tables(csv_read(root/name),rows)
     result = dict(evaluation_episodes=len(work),physical_steps=len(work)*p['evaluation_steps'],window_summaries=len(records),complete_replays=len(chosen),
@@ -333,9 +355,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__); parser.add_argument('--phase',choices=['init','run','benchmark','training-cost','analyze','verify'],required=True)
     parser.add_argument('--out',required=True,type=Path); parser.add_argument('--workers',type=int,default=1)
     parser.add_argument('--config',default='experiments/configs/compute-tradeoff.json'); parser.add_argument('--parent',default='results/diagnostics/2026-11-09-model-error-study')
+    parser.add_argument('--retry', action='store_true', help='Retry a recorded failed evaluation, preserving partial outputs')
     args = parser.parse_args()
+    if args.retry and args.phase != 'run': parser.error('--retry requires --phase run')
     if args.phase == 'init': initialize(args.out,args.config,args.parent)
-    elif args.phase in ('run','training-cost','verify'): globals()[args.phase.replace('-','_')](args.out,args.workers)
+    elif args.phase == 'run': run(args.out, args.workers, retry=args.retry)
+    elif args.phase in ('training-cost','verify'): globals()[args.phase.replace('-','_')](args.out,args.workers)
     else: globals()[args.phase](args.out)
 
 

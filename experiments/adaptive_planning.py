@@ -17,7 +17,7 @@ from .common import read, sha, csv_read, csv_write, aggregate, compare_tables
 from .model_error_study import SOURCES as PRIOR_SOURCES, market, fit, load_agent
 from .market_planner import MarketPlanner
 from .market.controllers import JointController
-from .common import summarize,check_parent_manifest
+from .common import summarize, check_parent_manifest, require, evaluation_run
 
 SOURCES = PRIOR_SOURCES + ('experiments/adaptive_planning.py',)
 IDENTITY = ('case', 'method', 'replicate', 'model_seed', 'market_seed')
@@ -103,16 +103,19 @@ def initialize(root, config, parent):
         shutil.copyfile(parent/name, root/'parent'/name)
     parent_files = {name:sha(root/'parent'/name) for name in ('protocol.json', 'fits.json', 'models.json', 'source-hashes.json')}
     for model in read(parent/'models.json'):
-        assert sha(parent/model['path']) == model['sha256']
+        require(sha(parent/model['path']) == model['sha256'], 'Saved evidence hash mismatch')
         target = root/'parent'/model['path']; target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(parent/model['path'], target); parent_files[model['path']] = sha(target)
     parent_plan = read(parent/'protocol.json')
-    assert not set(p['evaluation_seeds']) & set(parent_plan['evaluation_seeds']+parent_plan.get('validation_seeds', []))
+    require(not set(p['evaluation_seeds']) & set(parent_plan['evaluation_seeds']+parent_plan.get('validation_seeds', [])),
+            'Invalid parent models or overlapping evaluation seeds')
     fits = read(root/'parent/fits.json')
     for r in p['calibration_replicates']:
-        assert any(f['size'] == p['calibration_size'] and f['replicate'] == r for f in fits)
+        require(any(f['size'] == p['calibration_size'] and f['replicate'] == r for f in fits),
+                'Invalid parent models or overlapping evaluation seeds')
         for s in p['training_seeds']:
-            assert any(m['size'] == p['calibration_size'] and m['replicate'] == r and m['seed'] == s for m in read(root/'parent/models.json'))
+            require(any(m['size'] == p['calibration_size'] and m['replicate'] == r and m['seed'] == s for m in read(root/'parent/models.json')),
+                    'Invalid parent models or overlapping evaluation seeds')
     write_json(root/'parent-hashes.json', parent_files)
     write_json(root/'protocol.json', p); write_json(root/'manifest.json', manifest('online-refitting-versus-frozen-price-planning'))
     repo = Path(__file__).resolve().parents[1]; hashes = {}
@@ -125,8 +128,12 @@ def initialize(root, config, parent):
 
 def check(root):
     repo = Path(__file__).resolve().parents[1]
-    for name, digest in read(root/'source-hashes.json').items(): assert sha(repo/name) == sha(root/'source'/name) == digest
-    for name, digest in read(root/'parent-hashes.json').items(): assert sha(root/'parent'/name) == digest
+    for name, digest in read(root/'source-hashes.json').items():
+        require(sha(repo/name) == sha(root/'source'/name) == digest,
+                'Saved evidence hash mismatch')
+    for name, digest in read(root/'parent-hashes.json').items():
+        require(sha(root/'parent'/name) == digest,
+                'Saved evidence hash mismatch')
     check_parent_manifest(read(root/'parent/source-hashes.json'),read(root/'source-hashes.json'))
 
 
@@ -183,10 +190,12 @@ def evaluate_one(root, identity):
     return records, trace, updates, timing
 
 
+@evaluation_run(
+    inputs=('protocol.json', 'parent-hashes.json', 'source-hashes.json'),
+    outputs=('steps.csv.gz', 'episodes.csv', 'updates.csv', 'timings.csv',
+             'summary.csv', 'per-fit.csv', 'data-hashes.json'))
 def run(root, workers=1):
     root = Path(root); check(root); work = jobs(root)
-    if (root/'evaluation-start.json').exists(): raise FileExistsError('Evaluation started')
-    write_json(root/'evaluation-start.json', {n:sha(root/n) for n in ('protocol.json', 'parent-hashes.json', 'source-hashes.json')})
     records = []; updates = []; times = []
     with ProcessPoolExecutor(max_workers=workers) as pool, gzip.open(root/'steps.csv.gz', 'wt', newline='') as stream:
         futures = [pool.submit(evaluate_one, str(root), j) for j in work]; writer = None
@@ -235,10 +244,12 @@ def report(root):
 def verify(root, workers=1):
     root = Path(root); check(root); p = resolve(read(root/'protocol.json')); torch.set_num_threads(1)
     for filename in ('data-hashes.json', 'report-hashes.json'):
-        for name, digest in read(root/filename).items(): assert sha(root/name) == digest
+        for name, digest in read(root/filename).items():
+            require(sha(root/name) == digest,
+                    'Saved evidence hash mismatch')
     work = jobs(root); keys = {tuple(str(j[k]) for k in IDENTITY) for j in work}
     records = csv_read(root/'episodes.csv'); lookup = {tuple(r[k] for k in IDENTITY)+(r['window'],):r for r in records}
-    assert len(records) == len(lookup) == 5*len(work)
+    require(len(records) == len(lookup) == 5*len(work), 'Saved research evidence is inconsistent')
     for identity in work:
         if not identity['method'].startswith('online'): continue
         key = tuple(str(identity[k]) for k in IDENTITY)+('pre_update',)
@@ -251,23 +262,27 @@ def verify(root, workers=1):
     replay_keys = {tuple(str(j[k]) for k in IDENTITY) for j in chosen}
     with gzip.open(root/'steps.csv.gz', 'rt') as stream:
         for key, group in groupby(csv.DictReader(stream), key=lambda r:tuple(r[k] for k in IDENTITY)):
-            assert key in keys and key not in seen; seen.add(key)
+            require(key in keys and key not in seen, 'Saved research evidence is inconsistent'); seen.add(key)
             trace = [{k:float(v) for k, v in r.items() if k not in IDENTITY} for r in group]
-            assert [int(r['step']) for r in trace] == list(range(1, p['evaluation_steps']+1))
+            require([int(r['step']) for r in trace] == list(range(1, p['evaluation_steps']+1)),
+                    'Saved research evidence is inconsistent')
             for r in trace:
-                assert abs(r['cash_residual']) < 1e-7 and r['goods_residual'] < 1e-7
-                assert abs(r['reward']+sum(r[k] for k in ('money_cost', 'service_cost', 'inventory_cost', 'price_cost', 'waste_cost'))) < 1e-8
+                require(abs(r['cash_residual']) < 1e-7 and r['goods_residual'] < 1e-7,
+                        'Saved research evidence is inconsistent')
+                require(abs(r['reward']+sum(r[k] for k in ('money_cost', 'service_cost', 'inventory_cost', 'price_cost', 'waste_cost'))) < 1e-8,
+                        'Saved research evidence is inconsistent')
             for window, summary in windows(p, trace):
                 for metric, v in summary.items(): np.testing.assert_allclose(v, float(lookup[key+(window,)][metric]), atol=1e-9)
             fitted = [r for r in update_rows if tuple(r[k] for k in IDENTITY) == key]
             if key[1].startswith('online'):
                 expected = [t for t in range(1, p['evaluation_steps']+1) if t >= p['minimum_observations'] and t % p['update_interval'] == 0]
-                assert [int(r['after_step']) for r in fitted] == expected
-                assert all(int(r['last_used_step']) == int(r['after_step']) and int(r['n']) <= p['rolling_window'] for r in fitted)
-            else: assert not fitted
+                require([int(r['after_step']) for r in fitted] == expected, 'Saved research evidence is inconsistent')
+                require(all(int(r['last_used_step']) == int(r['after_step']) and int(r['n']) <= p['rolling_window'] for r in fitted),
+                        'Saved research evidence is inconsistent')
+            else: require(not fitted, 'Saved research evidence is inconsistent')
             all_updates += len(fitted)
             if key in replay_keys: retained[key] = trace, fitted
-    assert seen == keys
+    require(seen == keys, 'Saved research evidence is inconsistent')
     with ProcessPoolExecutor(max_workers=workers) as pool:
         futures = [pool.submit(evaluate_one, str(root), j) for j in chosen]
         for identity, future in zip(chosen, futures):
@@ -288,10 +303,13 @@ def main():
     parser.add_argument('--out', required=True, type=Path); parser.add_argument('--workers', type=int, default=1)
     parser.add_argument('--config', default='experiments/configs/adaptive-planning.json')
     parser.add_argument('--parent', default='results/diagnostics/2026-11-09-model-error-study')
+    parser.add_argument('--retry', action='store_true', help='Retry a recorded failed evaluation, preserving partial outputs')
     args = parser.parse_args()
+    if args.retry and args.phase != 'run': parser.error('--retry requires --phase run')
     if args.phase == 'init': initialize(args.out, args.config, args.parent)
     elif args.phase == 'report': report(args.out)
-    else: globals()[args.phase](args.out, args.workers)
+    elif args.phase == 'run': run(args.out, args.workers, retry=args.retry)
+    else: verify(args.out, args.workers)
 
 
 if __name__ == '__main__': main()

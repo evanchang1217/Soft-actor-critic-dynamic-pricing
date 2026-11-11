@@ -11,9 +11,9 @@ from experiments.common import read
 def test_budget_protocol_requires_stochastic_forecasts_and_due_nondue_audits():
     p = read('experiments/configs/compute-tradeoff.json'); resolve(p)
     p['planners'][0]['particles'] = 1
-    with pytest.raises(AssertionError): resolve(p)
+    with pytest.raises(ValueError): resolve(p)
     p = read('experiments/configs/compute-tradeoff.json'); p['audit_steps'] = [48,144]
-    with pytest.raises(AssertionError): resolve(p)
+    with pytest.raises(ValueError): resolve(p)
 
 
 def test_complete_tiny_quality_cost_training_replay_and_archive(tmp_path):
@@ -53,5 +53,12 @@ def test_complete_tiny_quality_cost_training_replay_and_archive(tmp_path):
     changed = deepcopy(states[0]); changed['next_observation'] = [999.]*len(changed['next_observation'])
     obs = np.asarray(states[0]['observation'],np.float32)
     np.testing.assert_array_equal(obj.act(obs),prepared(root,'h1_f2',changed,0).act(obs))
+    from scripts.report import render_compute
+    render_compute(root)
+    text = (root/'README.md').read_text()
+    assert '2 planning budgets' in text and '1 fixed SAC policies' in text
+    assert '8 fresh-market episodes, 2 cases, 1 paired markets' in text
+    assert 'periods 5–8' in text and '2-period update interval' in text
+    assert 'six planning budgets' not in text.lower()
     from scripts.reproduce import reproduce_compute as reproduce
     assert reproduce(root,workers=2)['result'] == result

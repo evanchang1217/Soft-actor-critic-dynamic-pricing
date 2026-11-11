@@ -99,3 +99,12 @@ def test_complete_tiny_shared_data_study_and_replay(tmp_path):
     from scripts.report import planner_gaps
     gaps = planner_gaps(root)
     assert len(gaps) == 9 and all(np.isfinite(r['difference']) for r in gaps)
+    from scripts.report import render_model_error
+    render_model_error(root)
+    text = (root/'README.md').read_text()
+    assert 'nested 4/8 public transitions' in text
+    assert '16 synthetic interactions each' in text
+    assert '1 cases, 1 fresh paired evaluation markets, 8 periods each' in text
+    assert 'periods 5–8' in text and '2 final checkpoints' in text
+    assert 'at 8 calibration transitions' in text
+    assert 'missing `/usr/bin/python`' not in text

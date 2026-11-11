@@ -51,6 +51,8 @@ in [archive-manifest.json](../results/archive-manifest.json).
 **Availability:** the archive exists locally outside the repo; no public download
 has been published. The demo and core tests work from a clean clone. Full study
 verification requires obtaining the archive from the project owner.
+To request it, [open a repository issue](https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/issues/new)
+and name `sac-pricing-evidence-2026-11-10.tar.gz`.
 Detailed per-run results, audit inputs, and compute-study state and timing
 samples are in the archive; checkout result summaries, figures and demo inputs
 remain available. Start with the [result guides](../results/README.md).
@@ -100,6 +102,15 @@ designs and retain source/model metadata. Fitted-model follow-ups accept a resto
 model-error record with `--parent`; it includes the initial logging data and models.
 For original-market reruns, point reference-model paths in a copied config at the
 restored tree. SAC's additional simulated training interactions count as resources.
+
+### Retry a failed evaluation
+
+The model-error `evaluate` phase and adaptive/compute `run` phases record caught
+failures in `evaluation-failed.json`. Add `--retry` to the same evaluation command
+to restart it with unchanged inputs. Partial outputs are preserved under the
+record's `failed-attempts/` directory. Completed evaluations and attempts without
+a recorded failure remain protected from overwriting. This restarts evaluation;
+it does not resume training or continue from a partial trace.
 
 ## Run a completed study from frozen source
 

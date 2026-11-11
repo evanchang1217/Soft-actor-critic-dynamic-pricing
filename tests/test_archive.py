@@ -31,7 +31,8 @@ def test_snapshot_rejects_changed_source(tmp_path):
         extract_snapshot(tmp_path, tmp_path / "source")
 
 
-def test_verifier_uses_archived_source_and_preserves_original_report(tmp_path):
+def test_verifier_uses_archived_source_and_preserves_original_report(tmp_path, monkeypatch):
+    monkeypatch.setenv('PYTHONOPTIMIZE', '1')
     record = tmp_path / "record"
     record.mkdir()
     snapshot(record)
@@ -40,6 +41,8 @@ def test_verifier_uses_archived_source_and_preserves_original_report(tmp_path):
     source.mkdir()
     (source / "verify.py").write_text('''from pathlib import Path
 import json, sys
+if not __debug__:
+    raise RuntimeError('Archived assertions must remain enabled')
 assert Path("sentinel.txt").read_text() == "archived"
 report = {"archived_source_used": True}
 (Path(sys.argv[1]) / "verification.json").write_text(json.dumps(report))

@@ -26,7 +26,7 @@ from .market.continuing import StationaryMarket, Regime
 from .common import MARKET_SOURCES
 from .market_planner import MarketPlanner
 from .market.controllers import JointController
-from .common import summarize
+from .common import summarize, require, evaluation_run
 
 SOURCES = MARKET_SOURCES + ('experiments/market_planner.py','experiments/model_error_study.py')
 NOMINAL = dict(base_slope=5., reservation=7.5, switch_probability=.06)
@@ -218,10 +218,12 @@ def train(root, workers=1):
 def load_agent(root, model):
     if sha(root/model['path']) != model['sha256']: raise ValueError('Model hash mismatch')
     saved = torch.load(root/model['path'], map_location='cpu', weights_only=True)
-    assert saved['format'] == 'shared-model-error-v1'
+    require(saved['format'] == 'shared-model-error-v1', 'Checkpoint metadata mismatch')
     for key, name in (('protocol_sha256', 'protocol.json'), ('fits_sha256', 'fits.json'), ('source_manifest_sha256', 'source-hashes.json')):
-        assert saved[key] == sha(root/name)
-    for key in ('seed', 'replicate', 'size', 'parameters', 'steps', 'updates'): assert saved[key] == model[key]
+        require(saved[key] == sha(root/name), 'Saved evidence hash mismatch')
+    for key in ('seed', 'replicate', 'size', 'parameters', 'steps', 'updates'):
+        require(saved[key] == model[key],
+                'Checkpoint metadata mismatch')
     agent = SACAgent(market(model['parameters']), SACConfig(**saved['sac']))
     agent.policy.load_state_dict(saved['policy']); return agent
 
@@ -271,10 +273,11 @@ def evaluate_one(root, identity):
     return records, trace
 
 
+@evaluation_run(
+    inputs=('protocol.json', 'fits.json', 'models.json', 'source-hashes.json'),
+    outputs=('steps.csv.gz', 'episodes.csv', 'summary.csv', 'data-hashes.json'))
 def evaluate(root, workers=1):
     root = Path(root); check_sources(root); work = jobs(root)
-    if (root/'evaluation-start.json').exists(): raise FileExistsError('Evaluation already started')
-    write_json(root/'evaluation-start.json', {name: sha(root/name) for name in ('protocol.json', 'fits.json', 'models.json')})
     records = []
     with ProcessPoolExecutor(max_workers=workers) as pool, gzip.open(root/'steps.csv.gz', 'wt', newline='') as stream:
         futures = [pool.submit(evaluate_one, str(root), j) for j in work]; writer = None
@@ -337,31 +340,43 @@ IDENTITY = ('case', 'market_seed', 'method', 'size', 'replicate', 'model_seed')
 
 def verify(root):
     root = Path(root); check_sources(root); p = resolve(read(root/'protocol.json')); torch.set_num_threads(1)
-    for name, digest in read(root/'data-hashes.json').items(): assert sha(root/name) == digest
-    for name, digest in read(root/'report-hashes.json').items(): assert sha(root/name) == digest
+    for name, digest in read(root/'data-hashes.json').items():
+        require(sha(root/name) == digest,
+                'Saved evidence hash mismatch')
+    for name, digest in read(root/'report-hashes.json').items():
+        require(sha(root/name) == digest,
+                'Saved evidence hash mismatch')
     for fitted in read(root/'fits.json'):
         rows = csv_read(root/fitted['log']); fresh = collect(fitted['replicate'], max(p['calibration_sizes']))
         compare_tables(rows, fresh)
         regenerated = fit(rows[:fitted['size']])
         for key in PARAMETERS: np.testing.assert_allclose(regenerated['parameters'][key], fitted['parameters'][key], atol=1e-10)
     models = read(root/'models.json')
-    assert len(models) == len(p['calibration_replicates'])*len(p['calibration_sizes'])*len(p['training_seeds'])
+    require(len(models) == len(p['calibration_replicates'])*len(p['calibration_sizes'])*len(p['training_seeds']),
+            'Saved research evidence is inconsistent')
     for model in models:
         load_agent(root, model)
-        assert model['steps'] == p['training_episodes']*p['training_steps_per_episode']
-        assert model['updates'] == model['steps']-max(p['sac']['warmup_steps'], p['sac']['batch_size'])+1
+        require(model['steps'] == p['training_episodes']*p['training_steps_per_episode'],
+                'Saved research evidence is inconsistent')
+        require(model['updates'] == model['steps']-max(p['sac']['warmup_steps'], p['sac']['batch_size'])+1,
+                'Saved research evidence is inconsistent')
     work = jobs(root); keys = {tuple(str(j[k]) for k in IDENTITY) for j in work}; seen = set()
-    records = csv_read(root/'episodes.csv'); assert len(records) == 3*len(work)
+    records = csv_read(root/'episodes.csv')
+    require(len(records) == 3*len(work),
+            'Saved research evidence is inconsistent')
     lookup = {tuple(str(r[k]) for k in IDENTITY)+(r['window'],): r for r in records}
     replayed = 0
     with gzip.open(root/'steps.csv.gz', 'rt') as stream:
         for key, group in groupby(csv.DictReader(stream), key=lambda r: tuple(r[k] for k in IDENTITY)):
-            assert key in keys and key not in seen; seen.add(key)
+            require(key in keys and key not in seen, 'Saved research evidence is inconsistent'); seen.add(key)
             trace = [{k: float(v) for k, v in r.items() if k not in IDENTITY} for r in group]
-            assert [int(r['step']) for r in trace] == list(range(1, p['evaluation_steps']+1))
+            require([int(r['step']) for r in trace] == list(range(1, p['evaluation_steps']+1)),
+                    'Saved research evidence is inconsistent')
             for row in trace:
-                assert abs(row['cash_residual']) < 1e-7 and row['goods_residual'] < 1e-7
-                assert abs(row['reward']+sum(row[k] for k in ('money_cost', 'service_cost', 'inventory_cost', 'price_cost', 'waste_cost'))) < 1e-8
+                require(abs(row['cash_residual']) < 1e-7 and row['goods_residual'] < 1e-7,
+                        'Saved research evidence is inconsistent')
+                require(abs(row['reward']+sum(row[k] for k in ('money_cost', 'service_cost', 'inventory_cost', 'price_cost', 'waste_cost'))) < 1e-8,
+                        'Saved research evidence is inconsistent')
             for name, subset in (('first', trace[:p['early_window']]), ('later', trace[p['early_window']:]), ('full', trace)):
                 for metric, v in summarize(subset).items(): np.testing.assert_allclose(v, float(lookup[key+(name,)][metric]), atol=1e-9)
             identity = next(j for j in work if tuple(str(j[k]) for k in IDENTITY) == key)
@@ -371,7 +386,7 @@ def verify(root):
                 for old, new in zip(trace, regenerated):
                     for name in old: np.testing.assert_allclose(old[name], new[name], atol=1e-8)
                 replayed += 1
-    assert seen == keys and len(lookup) == len(records)
+    require(seen == keys and len(lookup) == len(records), 'Saved research evidence is inconsistent')
     compare_tables(csv_read(root/'summary.csv'), aggregate(records, ['case', 'method', 'size', 'window']))
     contrasts, degradation = statistics(root)
     compare_tables(csv_read(root/'contrasts.csv'), contrasts); compare_tables(csv_read(root/'degradation.csv'), degradation)
@@ -386,9 +401,12 @@ def main():
     a.add_argument('--phase', choices=['init', 'calibrate', 'train', 'evaluate', 'report', 'verify'], required=True)
     a.add_argument('--out', required=True, type=Path); a.add_argument('--workers', type=int, default=1)
     a.add_argument('--config', default='experiments/configs/model-error-study.json')
+    a.add_argument('--retry', action='store_true', help='Retry a recorded failed evaluation, preserving partial outputs')
     args = a.parse_args()
+    if args.retry and args.phase != 'evaluate': a.error('--retry requires --phase evaluate')
     if args.phase == 'init': initialize(args.out, args.config)
-    elif args.phase in ('train', 'evaluate'): globals()[args.phase](args.out, args.workers)
+    elif args.phase == 'evaluate': evaluate(args.out, args.workers, retry=args.retry)
+    elif args.phase == 'train': train(args.out, args.workers)
     else: globals()[args.phase](args.out)
 
 

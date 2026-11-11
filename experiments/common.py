@@ -2,7 +2,10 @@
 import csv
 import hashlib
 import json
+from functools import wraps
+import shutil
 import zipfile
+from uuid import uuid4
 from rl.artifacts import write_json
 from pathlib import Path
 import numpy as np
@@ -33,12 +36,51 @@ def aggregate(rows,keys):
     return [dict(**dict(zip(keys,identity)),**{k:float(np.mean([float(r[k]) for r in rows if tuple(r[f] for f in keys)==identity])) for k in metrics}) for identity in identities]
 
 
+def require(condition, message):
+    """Validate research inputs and evidence even when Python runs with -O."""
+    if not condition:
+        raise ValueError(message)
+
+
+def evaluation_run(*, inputs, outputs):
+    """Allow explicit retries of recorded failures, preserving partial outputs."""
+    def decorate(run):
+        @wraps(run)
+        def wrapped(root, *args, retry=False, **kwargs):
+            root = Path(root)
+            started, failed = root/'evaluation-start.json', root/'evaluation-failed.json'
+            hashes = {name: sha(root/name) for name in inputs}
+            if started.exists():
+                if not retry or not failed.exists() or (root/'data-hashes.json').exists():
+                    raise FileExistsError('Evaluation exists; use --retry only for a recorded failure')
+                require(read(started) == hashes, 'Evaluation inputs changed; create a new record')
+                backup = root/'failed-attempts'/uuid4().hex
+                backup.mkdir(parents=True)
+                for name in ('evaluation-start.json', 'evaluation-failed.json', *outputs):
+                    if (root/name).exists():
+                        shutil.move(root/name, backup/name)
+            elif retry:
+                raise FileNotFoundError('No failed evaluation to retry')
+            elif failed.exists() or any((root/name).exists() for name in outputs):
+                raise FileExistsError('Evaluation outputs already exist; create a new record')
+            with started.open('x', encoding='utf-8') as stream:
+                json.dump(hashes, stream, indent=2)
+                stream.write('\n')
+            try:
+                return run(root, *args, **kwargs)
+            except BaseException as error:
+                write_json(failed, {'error': type(error).__name__, 'message': str(error)})
+                raise
+        return wrapped
+    return decorate
+
+
 def compare_tables(saved,computed):
-    assert len(saved)==len(computed)
+    require(len(saved) == len(computed), 'Result table row counts differ')
     for a,b in zip(saved,computed):
-        assert set(a)==set(b)
+        require(set(a) == set(b), 'Result table columns differ')
         for k,v in b.items():
-            if isinstance(v,str):assert a[k]==v
+            if isinstance(v,str): require(a[k] == v, f'Result table value differs: {k}')
             else:np.testing.assert_allclose(float(a[k]),v,rtol=1e-8,atol=1e-8)
 
 

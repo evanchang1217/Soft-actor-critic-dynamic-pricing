@@ -13,6 +13,7 @@ from uuid import uuid4
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from experiments.records import with_evidence,validate_source_manifest,LEGACY_SHARED
+from experiments.common import require
 from experiments.reproduce import extract_snapshot,reproduce as reproduce_main
 from rl.artifacts import new_run_directory,write_json
 
@@ -34,9 +35,12 @@ def hydrate_trace(root):
     root=Path(root)
     if not (root/'trace-parts.json').exists():return
     p=json.loads((root/'trace-parts.json').read_text())
-    assert p['format']=='lossless-compressed-byte-parts-v1' and p['file']=='steps.csv.gz'
+    require(p['format']=='lossless-compressed-byte-parts-v1' and p['file']=='steps.csv.gz',
+            'Reconstructed trace metadata or checksum mismatch')
     if (root/'steps.csv.gz').exists():
-        assert hashlib.sha256((root/'steps.csv.gz').read_bytes()).hexdigest()==p['sha256'];return
+        require(hashlib.sha256((root/'steps.csv.gz').read_bytes()).hexdigest()==p['sha256'],
+                'Saved evidence hash mismatch')
+        return
     full=hashlib.sha256();size=0
     with (root/'steps.csv.gz').open('wb') as stream:
         for part in p['parts']:
@@ -44,7 +48,7 @@ def hydrate_trace(root):
             block=(root/part['path']).read_bytes()
             if len(block)!=part['size'] or hashlib.sha256(block).hexdigest()!=part['sha256']:raise ValueError('Trace part mismatch')
             stream.write(block);full.update(block);size+=len(block)
-    assert full.hexdigest()==p['sha256'] and size==p['size']
+    require(full.hexdigest()==p['sha256'] and size==p['size'], 'Saved evidence hash mismatch')
 
 @with_evidence
 def reproduce_stationary(record):
@@ -62,18 +66,18 @@ def reproduce_stationary(record):
         for package in ('experiments','rl'):(code/package/'__init__.py').touch()
         shutil.copytree(record,root/'record',ignore=lambda path,names:['steps.csv.gz'] if Path(path)==record and (record/'trace-parts.json').exists() else [])
         hydrate_trace(root/'record')
-        subprocess.run([sys.executable,'-m','experiments.stationary_study','--phase','verify','--out',str(root/'record')],cwd=code,env=dict(os.environ,PYTHONPATH=str(code)),check=True)
+        subprocess.run([sys.executable,'-m','experiments.stationary_study','--phase','verify','--out',str(root/'record')],cwd=code,env=dict(os.environ, PYTHONOPTIMIZE="0",PYTHONPATH=str(code)),check=True)
         if (record/'report-provenance.json').exists():
             provenance=json.loads((record/'report-provenance.json').read_text())
             if hashlib.sha256((record/'report-source.py').read_bytes()).hexdigest()!=provenance['source_sha256']:raise ValueError('Report source mismatch')
             shutil.copyfile(record/'report-source.py',code/'experiments/stationary_report.py')
-            subprocess.run([sys.executable,'-m','experiments.stationary_report','--phase','verify','--out',str(root/'record')],cwd=code,env=dict(os.environ,PYTHONPATH=str(code)),check=True)
+            subprocess.run([sys.executable,'-m','experiments.stationary_report','--phase','verify','--out',str(root/'record')],cwd=code,env=dict(os.environ, PYTHONOPTIMIZE="0",PYTHONPATH=str(code)),check=True)
         supplement=record/'planning-extra'
         if (supplement/'hashes.json').exists():
             plan=json.loads((supplement/'plan.json').read_text())
             if hashlib.sha256((supplement/'source.py').read_bytes()).hexdigest()!=plan['source_sha256']:raise ValueError('Supplement source mismatch')
             shutil.copyfile(supplement/'source.py',code/'experiments/stationary_planning_extra.py')
-            subprocess.run([sys.executable,'-m','experiments.stationary_planning_extra','--phase','verify','--parent',str(root/'record')],cwd=code,env=dict(os.environ,PYTHONPATH=str(code)),check=True)
+            subprocess.run([sys.executable,'-m','experiments.stationary_planning_extra','--phase','verify','--parent',str(root/'record')],cwd=code,env=dict(os.environ, PYTHONOPTIMIZE="0",PYTHONPATH=str(code)),check=True)
         if (record/'timing-provenance.json').exists():
             p=json.loads((record/'timing-provenance.json').read_text())
             for name,key in [('timing-source.py','source_sha256'),('decision-states.json','input_states_sha256'),('models.json','models_sha256'),('selection.json','selection_sha256'),('decision-cpu-time.csv','output_sha256')]:
@@ -106,7 +110,7 @@ def reproduce_model_error(record, save_verification=False):
         shutil.copytree(record, root/'record')
         subprocess.run([sys.executable, '-m', 'experiments.model_error_study', '--phase', 'verify',
                         '--out', str(root/'record')], cwd=code,
-                       env=dict(os.environ, PYTHONPATH=str(code)+os.pathsep+os.environ.get('PYTHONPATH', '')), check=True)
+                       env=dict(os.environ, PYTHONOPTIMIZE="0", PYTHONPATH=str(code)+os.pathsep+os.environ.get('PYTHONPATH', '')), check=True)
         prediction = root/'record'/'prediction-audit'
         if prediction.exists():
             saved = json.loads((prediction/'hashes.json').read_text())
@@ -117,7 +121,7 @@ def reproduce_model_error(record, save_verification=False):
             # Regenerate only inside this disposable copy; retain the original record.
             shutil.rmtree(prediction)
             subprocess.run([sys.executable, '-m', 'experiments.model_error_prediction', '--record', str(root/'record')],
-                           cwd=code, env=dict(os.environ, PYTHONPATH=str(code)+os.pathsep+os.environ.get('PYTHONPATH', '')), check=True)
+                           cwd=code, env=dict(os.environ, PYTHONOPTIMIZE="0", PYTHONPATH=str(code)+os.pathsep+os.environ.get('PYTHONPATH', '')), check=True)
             for name, digest in saved.items():
                 if hashlib.sha256((prediction/name).read_bytes()).hexdigest() != digest:
                     raise ValueError('Prediction audit regeneration mismatch: ' + name)
@@ -138,7 +142,7 @@ def reproduce_model_error(record, save_verification=False):
                 'compare_tables(csv_read(r/"per-model.csv"),aggregate(csv_read(r/"episodes.csv"),'
                 '["case","method","size","replicate","model_seed","window"]))')
             subprocess.run([sys.executable, '-c', snippet, str(root/'record')], cwd=code,
-                           env=dict(os.environ, PYTHONPATH=str(code)+os.pathsep+os.environ.get('PYTHONPATH', '')), check=True)
+                           env=dict(os.environ, PYTHONOPTIMIZE="0", PYTHONPATH=str(code)+os.pathsep+os.environ.get('PYTHONPATH', '')), check=True)
             print('Rendered hashes checked; per-model means and planner-model gaps regenerated', flush=True)
         result = json.loads((root/'record'/'verification.json').read_text())
         if save_verification:
@@ -166,17 +170,20 @@ def reproduce_adaptive(record, workers=1, save=False):
     with tempfile.TemporaryDirectory(prefix='adaptive-planning-archive-') as temporary:
         root = Path(temporary); code = root/'code'
         for name, digest in hashes.items():
-            source = record/'source'/name; assert hashlib.sha256(source.read_bytes()).hexdigest() == digest
+            source = record/'source'/name
+            require(hashlib.sha256(source.read_bytes()).hexdigest() == digest,
+                    'Saved evidence hash mismatch')
             target = code/name; target.parent.mkdir(parents=True, exist_ok=True); shutil.copyfile(source, target)
         for package in ('experiments', 'rl'): (code/package/'__init__.py').touch()
         shutil.copytree(record, root/'record')
         subprocess.run([sys.executable, '-m', 'experiments.adaptive_planning', '--phase', 'verify', '--workers', str(workers),
             '--out', str(root/'record')], cwd=code,
-            env=dict(os.environ, PYTHONPATH=str(code)+os.pathsep+os.environ.get('PYTHONPATH', '')), check=True)
+            env=dict(os.environ, PYTHONOPTIMIZE="0", PYTHONPATH=str(code)+os.pathsep+os.environ.get('PYTHONPATH', '')), check=True)
         if (record/'render-provenance.json').exists():
             provenance = json.loads((record/'render-provenance.json').read_text())
             for name, digest in {**provenance['inputs'], **provenance['outputs']}.items():
-                assert hashlib.sha256((record/name).read_bytes()).hexdigest() == digest
+                require(hashlib.sha256((record/name).read_bytes()).hexdigest() == digest,
+                        'Saved evidence hash mismatch')
             (code/'scripts').mkdir(); (code/'scripts/__init__.py').touch()
             shutil.copyfile(record/'render-source.py', code/'scripts/report_adaptive_planning.py')
             helper = 'experiments.common' if 'experiments/common.py' in hashes else 'experiments.feature_screen'
@@ -186,7 +193,7 @@ def reproduce_adaptive(record, workers=1, save=False):
                 'compare_tables(csv_read(r/"estimate-quality.csv"),h); '
                 'compare_tables(csv_read(r/"cpu-summary.csv"),c)')
             subprocess.run([sys.executable, '-c', snippet, str(root/'record')], cwd=code,
-                env=dict(os.environ, PYTHONPATH=str(code)+os.pathsep+os.environ.get('PYTHONPATH', '')), check=True)
+                env=dict(os.environ, PYTHONOPTIMIZE="0", PYTHONPATH=str(code)+os.pathsep+os.environ.get('PYTHONPATH', '')), check=True)
             print('Rendered hashes checked; parameter/timing summaries reconstructed (timings not rerun)', flush=True)
         result = json.loads((root/'record/verification.json').read_text())
         output = dict(result=result, execution='exact archived source and copied parent models',
@@ -212,17 +219,20 @@ def reproduce_compute(record,workers=1,save=False):
     with tempfile.TemporaryDirectory(prefix='compute-tradeoff-archive-') as temporary:
         root = Path(temporary); code = root/'code'
         for name,digest in hashes.items():
-            source = record/'source'/name; assert hashlib.sha256(source.read_bytes()).hexdigest() == digest
+            source = record/'source'/name
+            require(hashlib.sha256(source.read_bytes()).hexdigest() == digest,
+                    'Saved evidence hash mismatch')
             target = code/name; target.parent.mkdir(parents=True,exist_ok=True); shutil.copyfile(source,target)
         for package in ('experiments','rl'): (code/package/'__init__.py').touch()
         shutil.copytree(record,root/'record')
-        env = dict(os.environ,PYTHONPATH=str(code)+os.pathsep+os.environ.get('PYTHONPATH',''))
+        env = dict(os.environ, PYTHONOPTIMIZE="0",PYTHONPATH=str(code)+os.pathsep+os.environ.get('PYTHONPATH',''))
         subprocess.run([sys.executable,'-m','experiments.compute_tradeoff','--phase','verify','--workers',str(workers),
             '--out',str(root/'record')],cwd=code,env=env,check=True)
         if (record/'render-provenance.json').exists():
             p = json.loads((record/'render-provenance.json').read_text())
             for name,digest in {**p['inputs'],**p['outputs']}.items():
-                assert hashlib.sha256((record/name).read_bytes()).hexdigest() == digest
+                require(hashlib.sha256((record/name).read_bytes()).hexdigest() == digest,
+                        'Saved evidence hash mismatch')
             print('Report input/source/output hashes checked; CPU times are not rerun',flush=True)
         result = json.loads((root/'record/verification.json').read_text())
         output = dict(result=result,execution='exact archived sources and copied original/replayed model artifacts',
@@ -251,7 +261,7 @@ def reproduce_audit(record, output, kind):
         staged=source/'record';staged.mkdir()
         for path in record.iterdir():
             if path.name not in ('verification.json','test-jobs'):(staged/path.name).symlink_to(path,target_is_directory=path.is_dir())
-        env=dict(os.environ,PYTHONPATH=str(source),MPLCONFIGDIR=str(source/'.matplotlib'))
+        env=dict(os.environ, PYTHONOPTIMIZE="0",PYTHONPATH=str(source),MPLCONFIGDIR=str(source/'.matplotlib'))
         subprocess.run([sys.executable,'-m',f'experiments.{kind}_audit','verify','--out',str(staged)],cwd=source,env=env,check=True)
         subprocess.run([sys.executable,'-m',f'experiments.{kind}_report',str(staged),'--check'],cwd=source,env=env,check=True)
         shutil.copyfile(staged/'verification.json',output/'verification.json')
@@ -299,7 +309,7 @@ def run_archived(record, study, arguments, results_root=None):
         (code/'results').symlink_to(results_root,target_is_directory=True)
         module='stationary_study' if study=='stationary' else study+'_audit'
         subprocess.run([sys.executable,'-m','experiments.'+module,*values],cwd=code,
-            env=dict(os.environ,PYTHONPATH=str(code)+os.pathsep+os.environ.get('PYTHONPATH','')),check=True)
+            env=dict(os.environ, PYTHONOPTIMIZE="0",PYTHONPATH=str(code)+os.pathsep+os.environ.get('PYTHONPATH','')),check=True)
 
 
 if __name__=='__main__':
