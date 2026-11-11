@@ -1,6 +1,6 @@
 {
   "source": "docs/project.md",
-  "source_sha256": "bf4cf8b970fd016338d4043d1721505278dd033505d9b0487435da87c581eaa7",
+  "source_sha256": "abeed49160502c0120f9c2f1b970235f312161337bc3222ccdfd463e87a3ecad",
   "script": "scripts/render_summary.py",
   "script_sha256": "2145a7cecfcfbdc12cac6295203d9bea4a122a976dc12b7f9a642bd25c885778",
   "font_file": "DejaVuSans.ttf",
@@ -8,10 +8,10 @@
   "latin_font_sha256": "3fdf69cabf06049ea70a00b5919340e2ce1e6d02b0cc3c4b44fb6801bd1e0d22",
   "overview": "docs/assets/control-comparison.png",
   "overview_sha256": "44f81e64fc783df3e8fcddeaa4e82f64c24cea6f06d798a79078f207ec535d0e",
-  "pdf_sha256": "32a1ba4e27d876e5f987fae310cb152c0d096d239e159d06678014c2e90b9f76",
+  "pdf_sha256": "017f5e9fb0d3467c7ff1b603e1955b0d214f9913dea18596472bcf4d586f1bd6",
   "pages": 2,
-  "revision_date": "2026-11-06",
-  "repository_url": "https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/tree/research/reproducible-sac",
+  "revision_date": "2026-11-11",
+  "repository_url": "https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/tree/main",
   "language": "en",
   "paper_size": "US Letter"
 }

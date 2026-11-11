@@ -249,8 +249,8 @@ evidence archive and are verified independently of the current checkout.
 
 This is a synthetic control testbed with system and empirical contributions:
 objective ablations, multi-seed feedback comparisons, a representation correction,
-and measured quality/online-compute trade-offs. SAC is an existing algorithm;
-publication-level originality is not established.
+and measured quality/online-compute trade-offs. The studies use the established
+SAC algorithm and evaluate market design and controller behavior.
 
 The original-market score advantage reverses under tested satiation mechanisms.
 Aggregate-market transfer fails under scarce production. Periodic model refitting

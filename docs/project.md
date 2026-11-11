@@ -1,4 +1,4 @@
-# Project history and presentation
+# Project history
 
 ## Authorship
 
@@ -7,9 +7,9 @@ National Cheng Kung University. The author designed the pricing formulation and
 reward and developed the simulator, SAC system and web demonstration. The author
 reports second place among 87 projects; the award concerns that capstone.
 
-Later maintenance and evaluation used AI assistance for portions of coding and
-analysis. The contributions use the existing SAC algorithm. They center on
-modeling, system implementation, objective design and empirical evaluation.
+The research contributions center on market modeling, system implementation,
+objective design and empirical evaluation using the established SAC algorithm.
+AI tools assisted portions of subsequent coding and analysis.
 
 The [pre-maintenance implementation](https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/tree/e092c8684b2e42dd0277d053d38824a194e51aac)
 and [original poster](../Poster/capstone-poster.pdf) are historical evidence, separate
@@ -17,56 +17,38 @@ from subsequent experiments with their own protocols and source snapshots.
 
 | Stage | Maintained evidence |
 | --- | --- |
-| Original capstone | [Poster supplement](project.md#original-poster), original figures, server-integration workflow |
+| Original capstone | [Original poster](project.md#original-poster), pricing system and server-integration workflow |
 | Objective and original-market comparison | [Reward ablation](protocols.md#objective-design), [five-seed comparison](protocols.md#original-market-robustness) |
 | Behavioral limits | [Behavior](protocols.md#behavioral-assumptions) and [independent mechanisms](protocols.md#independent-mechanisms), including ranking reversals |
 | Representation and transfer | [New-seed retraining](protocols.md#representation-and-transfer), nine regimes and stronger planning |
 | Model knowledge and computation | [Estimation](protocols.md#shared-data-model-estimation), [online refitting](protocols.md#periodic-online-refitting), [quality/CPU study](protocols.md#quality-and-computation) |
 
-Earlier prototypes and diagnostics informed these studies. Repository curation
-on 2026-11-10 removed superseded standalone experiments and redundant narrative,
-while retaining the declared main comparisons, boundary cases and reproducibility
-artifacts. A subsequent small refactor extracted common market/controller code
-and moved full evidence to a separate verified archive; the checkout keeps
-summaries and runnable demo dependencies. [Result scope and limitations](../results/limitations/).
-
-The released Minecraft client reads market/player status. The original server
-plugin, scheduled price write-back code, historical dataset/fitting pipeline and
-deployed checkpoint are not included. Limited game-server testing is
-self-reported without detailed field efficacy measurements. Quantitative
-conclusions here concern synthetic markets.
+The current checkout contains the shared runtime, result summaries and demo
+models. Full experimental records and historical source snapshots are preserved
+in the [evidence archive](experiments.md#full-evidence-archive).
 
 ## Original poster
 
 The [original capstone poster](../Poster/capstone-poster.pdf)
-records the individual project's pricing system, integration workflow, and historical
-experiments. Follow-up work adds reproducible objective ablations, tuned feedback
-baselines, and five-seed evaluation. The current descriptive title is **Multi-Product
-Game-Market Pricing: SAC and Feedback Control**. The original poster remains unchanged.
+records the original pricing system, game-integration workflow and experiments.
+The repository has since added a revised reward, tuned feedback baselines,
+multi-seed evaluation, input-representation studies and planning comparisons.
+The poster is retained as the original capstone document; the
+[current result guides](../results/README.md) describe the subsequent evaluations.
 
-**Current contributions:** a multi-product pricing system, tested control-objective
-design, and empirical robustness/trade-off evidence. In nominal simulated markets,
-five-seed SAC exceeds validation-selected feedback on the common score by +5.30,
-exploratory 95% interval [3.88, 6.62]. Currency-control superiority is not universal.
-[Five-seed record](../results/main/).
+The versions differ in the following ways:
 
-| Historical poster account | Supported scope for the current presentation |
+| Topic | Current implementation and evaluation |
 | --- | --- |
-| Lower CPI indicates inflation control and stable currency value | The released CPI is a policy-controlled shop-price index. Its decrease alone cannot establish purchasing-power or real-inflation improvement. Current evaluation uses currency-setpoint error, trading, and price changes. |
-| Higher reward than random/rule strategies demonstrates effective market regulation | Reward measures chosen targets. The legacy reward is dominated by trade terms; follow-up ablations, stronger feedback, and held-out tests expose both improvements and losses. |
-| Logistic regression / Apriori behavior modeling from historical records | Original data and fitting/mining pipelines are not released. Reproducible results use heuristic player behavior; optional item associations are manually supplied. |
-| Daily scheduled SAC prices are written back to the game server | The poster describes the project-level workflow. Released code provides status reads; the full write-back script, plugin, and deployed checkpoint are absent. Limited game testing is author-reported without detailed efficacy measurements. |
+| Evaluation metrics | Currency-setpoint error, traded units, price changes and a common control score. The legacy `CPI` field is a shop-price index; results here concern simulated market control rather than measured real-game inflation. |
+| Reward and comparisons | An explicit currency-tracking reward is tested against legacy SAC at equal training budgets. Separate held-out studies compare SAC with tuned feedback and online planning. |
+| Player behavior | Reproducible experiments use documented synthetic behavior and optional manually supplied item associations. The historical data and logistic-regression/Apriori fitting pipeline described in the poster are outside the public release. |
+| Game integration | The public Minecraft client reads market/player status. The poster's complete server-side price-update workflow, plugin and deployed checkpoint are outside this release; reported game testing has no accompanying field-effect measurements. |
 
-The exact original experiment settings and raw logs have not been recovered. Follow-up
-records have their own dates, configurations, and source snapshots; they do not replace
-or reconstruct historical measurements. [Original poster figures](../Poster/capstone-poster.pdf).
-The award concerns the original capstone, not the subsequent evaluations.
-
-A concise account is: "The original project built the pricing system and integration
-workflow. Subsequent ablations and stronger comparisons established its effective
-conditions and limits. Quantitative conclusions concern control in simulated markets."
-Original contributions, later work, and AI assistance are distinguished in the
-[implementation history](project.md#authorship).
+Follow-up records include their own settings, logs and source snapshots. They
+evaluate the maintained system rather than reconstructing the poster's original
+measurements, whose exact settings and raw logs are unavailable. The reported
+capstone award applies to the original project.
 
 [Research brief](project-summary.pdf) · [Methods](methodology.md).
 
@@ -103,9 +85,10 @@ Quantitative evidence comes from a heuristic market simulator.
 10k budgets, revised SAC lowers currency error **88.9% versus legacy SAC**, retaining
 **96.3%** of units. Feedback still scores better.
 
-The award concerns the original individual capstone. Follow-up work is separately
-dated and used AI assistance for portions of coding and evaluation. The contribution
-uses the existing SAC algorithm. [Authorship and history](project.md#authorship).
+The award concerns the original individual capstone. Follow-up experiments are
+separately dated. The contributions are market modeling, objective design and
+empirical evaluation using the established SAC algorithm.
+[Project history](project.md#authorship).
 
 <!-- pagebreak -->
 

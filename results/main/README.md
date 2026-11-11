@@ -19,8 +19,26 @@ exploratory 95% interval of **[3.88, 6.62]**; the currency-error difference
 interval includes zero. These scores evaluate the stated simulation objectives,
 not real-player welfare.
 
-At equal 10k budgets, the revised currency-tracking SAC objective reduced currency
-error by **88.9% versus legacy SAC** while retaining **96.3% of traded units**.
+## Reward-design ablation
+
+This is a separate experiment with **10,000 training interactions per SAC policy**,
+five training seeds per objective and 40 held-out markets per scenario. The table
+shows the default market. Both rows use SAC; the training objective changes.
+
+| SAC training objective | Mean currency error ↓ | Units traded |
+| --- | ---: | ---: |
+| Legacy reward | 44.74% | 227,576 |
+| Revised currency-tracking reward | 4.96% | 219,047 |
+
+Currency error is the mean absolute deviation of total player currency from its
+initial value, expressed as a fraction of that initial value. From unrounded means,
+`1 - revised_error / legacy_error` is **88.9%**, and
+`revised_units / legacy_units` is **96.3%**. Both percentages use **legacy SAC**
+as the reference. They measure the effect of reward design, not SAC's improvement
+over feedback. At this 10k budget, the currency-feedback baseline has a better
+mean common score than revised SAC. The 30k comparison above is a different study.
+
+## Scenario results
 
 ![Performance across response and resource scenarios](../confirmation/2026-11-05-robustness/generalization.png)
 
