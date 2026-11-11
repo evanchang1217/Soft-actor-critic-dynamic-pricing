@@ -1,0 +1,5 @@
+# Optional RL comparison; use a separate virtual environment from requirements-lock.txt.
+-r requirements.txt
+stable-baselines3==2.7.1
+gymnasium==1.2.3
+pandas==2.2.3

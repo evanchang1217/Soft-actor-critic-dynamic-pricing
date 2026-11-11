@@ -71,6 +71,12 @@ Default-trained SAC exceeds tuned feedback by **+5.30** (exploratory 95% interva
 **[3.88, 6.62]**). Its currency-error difference interval includes zero.
 [Settings, scenarios and paired results](results/main/).
 
+A supplementary five-seed comparison at the same **30,000-interaction budget**
+tests TD3, PPO, discretized DQN and a second SAC implementation on 20 markets.
+Our SAC implementation has the highest mean score in the default and reduced-supply
+cases; PI leads when players respond less strongly to prices.
+[RL baseline comparison, settings and intervals](results/rl-baselines/).
+
 ### Reward-design ablation: a separate 10k-budget comparison
 
 At **10,000 training interactions per policy**, revised SAC reduces mean currency

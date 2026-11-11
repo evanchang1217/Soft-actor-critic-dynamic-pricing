@@ -86,6 +86,12 @@ the archive to Git. Download the published asset and check its checksum, then
 replace the local-only availability notices with its verified download link.
 Until that upload is complete, the archive is not publicly available.
 
+The newer RL baseline comparison has its own
+**sac-pricing-rl-baselines-2026-11-11.tar.gz** bundle; it is not part of the
+historical archive. Its [evidence index](../results/rl-baselines/evidence.json)
+records the checksum and size. Publish both bundles and their checksums as Release
+assets, preserving the original historical archive unchanged.
+
 ## Run maintained experiments
 
 ```bash
@@ -111,6 +117,43 @@ to restart it with unchanged inputs. Partial outputs are preserved under the
 record's `failed-attempts/` directory. Completed evaluations and attempts without
 a recorded failure remain protected from overwriting. This restarts evaluation;
 it does not resume training or continue from a partial trace.
+
+### Optional RL baseline comparison
+
+In a separate virtual environment, install CPU PyTorch as above, then
+`python -m pip install -r requirements-baselines.txt`. This optional dependency
+set uses Gymnasium 1.2.3; keep it separate from the recorded main-study lock.
+
+```bash
+python -m experiments.rl_baselines --out runs/rl-baselines-30k --workers 3
+python -m pytest -q tests/test_rl_baselines.py
+```
+
+The comparison matches the earlier original-market behavioral study: three goods,
+30,000 interactions per policy, the full recorded SAC configuration (width 128),
+five training seeds and the same 20 evaluation markets. Settings are checked
+against that study before training. Existing SAC, SB3 SAC, TD3, continuous-action
+PPO and DQN receive equal interaction budgets. PPO uses 1,000-step rollouts and
+125-sample minibatches to meet the budget exactly. DQN discretizes each price
+dimension to three moves, giving 729 joint actions. P/PI parameters remain frozen.
+This replaces an earlier 6,400-interaction screening configuration. Evaluation
+markets have been used before, so this is a retrospective extension, not fresh
+confirmation. No RL hyperparameter search is performed; exploratory intervals do
+not establish a definitive ranking. Models and outputs stay under ignored
+`runs/`; historical studies are unchanged.
+
+[Saved results and intervals](../results/rl-baselines/) are kept in the checkout.
+The separate baseline archive contains the full run under
+`rl-baselines-30k-20261111/`. After obtaining it and checking its SHA-256 against
+the evidence index, extract it into a fresh directory under `runs/`:
+
+```bash
+mkdir runs/rl-baselines-evidence
+tar -xzf /path/to/sac-pricing-rl-baselines-2026-11-11.tar.gz -C runs/rl-baselines-evidence
+```
+
+The extracted `output-hashes.json` lists every recorded file's checksum. The
+historical `research_archive.py` tool applies to the earlier bundle only.
 
 ## Run a completed study from frozen source
 

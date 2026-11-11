@@ -1,0 +1,121 @@
+{
+  "description": "Retrospective algorithm extension of the original 30k behavioral study; exact historical market, SAC settings, training seeds and previously used evaluation markets. Fixed untuned RL presets. Replaces the earlier 6400-interaction screening configuration.",
+  "market": {
+    "products": [
+      {
+        "name": "Iron",
+        "buy_low": 10.0,
+        "buy_high": 20.0,
+        "sell_low": 25.0,
+        "sell_high": 50.0
+      },
+      {
+        "name": "Gold",
+        "buy_low": 20,
+        "buy_high": 40,
+        "sell_low": 50,
+        "sell_high": 100
+      },
+      {
+        "name": "Diamond",
+        "buy_low": 40,
+        "buy_high": 80,
+        "sell_low": 100,
+        "sell_high": 200
+      }
+    ],
+    "num_players": 200,
+    "avg_qty": 5.0,
+    "initial_gold": 1000.0,
+    "max_steps": 100,
+    "price_offset": 0.05,
+    "fee_offset": 0.01,
+    "fee_min": 0.01,
+    "fee_max": 0.2,
+    "initial_fee": 0.05,
+    "price_sensitivity_low": 0.7,
+    "price_sensitivity_high": 1.3,
+    "resource_noise": 0.2,
+    "shock_step": 50,
+    "shock_multiplier": 2.0,
+    "association_rules": [],
+    "reward_mode": "balanced_v1",
+    "reward_count": 0.5,
+    "reward_volume": 0.5,
+    "reward_cpi": 0.05,
+    "reward_money": 1.0
+  },
+  "sac": {
+    "episodes": 300,
+    "hidden": 128,
+    "batch_size": 128,
+    "replay_size": 100000,
+    "warmup_steps": 1000,
+    "gamma": 0.99,
+    "tau": 0.005,
+    "learning_rate": 0.0003,
+    "initial_alpha": 0.2,
+    "control_fee": false
+  },
+  "methods": [
+    "sac_custom",
+    "sac_sb3",
+    "td3",
+    "ppo",
+    "dqn"
+  ],
+  "training_seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "training_steps": 30000,
+  "evaluation_seeds": [
+    43000010,
+    43000011,
+    43000012,
+    43000013,
+    43000014,
+    43000015,
+    43000016,
+    43000017,
+    43000018,
+    43000019,
+    43000020,
+    43000021,
+    43000022,
+    43000023,
+    43000024,
+    43000025,
+    43000026,
+    43000027,
+    43000028,
+    43000029
+  ],
+  "ppo_rollout_steps": 1000,
+  "ppo_batch_size": 125,
+  "bootstrap_seed": 20261111,
+  "bootstrap_resamples": 5000,
+  "scenarios": [
+    {
+      "name": "nominal",
+      "changes": {}
+    },
+    {
+      "name": "lower_response",
+      "changes": {
+        "price_sensitivity_low": 0.5,
+        "price_sensitivity_high": 1.1
+      }
+    },
+    {
+      "name": "resource_scarcity",
+      "changes": {
+        "shock_multiplier": 0.5
+      }
+    }
+  ],
+  "feedback_record": "results/confirmation/2026-11-06-behavior-audit"
+}

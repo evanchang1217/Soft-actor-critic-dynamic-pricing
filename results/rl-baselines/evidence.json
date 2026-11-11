@@ -1,0 +1,85 @@
+{
+  "study": "rl-baselines-30k-20261111",
+  "scope": "Retrospective original-market comparison; previously used test markets; fixed untuned RL presets.",
+  "training": {
+    "policies": 25,
+    "interactions_per_policy": 30000,
+    "total_interactions": 750000,
+    "training_seeds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "evaluation": {
+    "cases": 3,
+    "markets_per_case": 20,
+    "episodes": 1620
+  },
+  "archive": {
+    "filename": "sac-pricing-rl-baselines-2026-11-11.tar.gz",
+    "bytes": 20249975,
+    "sha256": "3a6da1cbfecb212d8fc6a03d20937d4d53a0347e649cce2fe69ceea80987edab",
+    "files": 104,
+    "availability": "Prepared locally; no public download has been published.",
+    "root_directory": "rl-baselines-30k-20261111"
+  },
+  "historical_settings": {
+    "record": "results/confirmation/2026-11-06-behavior-audit",
+    "protocol_sha256": "9d65e5fbef490fcaf775c8e2e2aaa511db8bd5e2012205512db4d0adc46c555f",
+    "matched_fields": [
+      "market",
+      "sac",
+      "training_steps",
+      "training_seeds",
+      "evaluation_seeds"
+    ],
+    "test_markets_previously_used": true
+  },
+  "environment": {
+    "python": "3.10.21",
+    "packages": {
+      "torch": "2.6.0+cpu",
+      "numpy": "2.2.6",
+      "gymnasium": "1.2.3",
+      "matplotlib": "3.10.9",
+      "Django": "5.2.18",
+      "requests": "2.34.2"
+    },
+    "optional_packages": {
+      "stable_baselines3": "2.7.1",
+      "pandas": "2.2.3",
+      "gymnasium": "1.2.3"
+    }
+  },
+  "files": {
+    "configuration": {
+      "path": "experiments/configs/rl-baselines.json",
+      "sha256": "739df8f1ecd8d6916a6cc93fe5f25bff06f47ddd691e6f5a8b093b399fead1ed"
+    },
+    "runner": {
+      "path": "experiments/rl_baselines.py",
+      "sha256": "c39a70d9db0766e3dca968d5e60ea353dcaf98f35738f8327517b1e7bf0ea048"
+    },
+    "optional_requirements": {
+      "path": "requirements-baselines.txt",
+      "sha256": "5359df988b0f4dcbba35bc04158785863d8b2243102f80b1ca7e40e457cb0fc4"
+    },
+    "summary": {
+      "path": "results/rl-baselines/summary.csv",
+      "sha256": "2a1db6c25a731ad9d6d48a1eefc43fe73fb5118670cbe0afc0145a50077e8ff5"
+    },
+    "contrasts": {
+      "path": "results/rl-baselines/contrasts.csv",
+      "sha256": "eb6bc823211aa80764824151f5e24070340b2855f8c8927b4eb4bc9b872a513c"
+    }
+  },
+  "archived_files": {
+    "protocol.json": "739df8f1ecd8d6916a6cc93fe5f25bff06f47ddd691e6f5a8b093b399fead1ed",
+    "research-source.zip": "a4bb53778908fa9f69af5b10e769eb852ce42d38747e693d64d87a191e5789dd",
+    "research-source-hashes.json": "3f428595e524811688c07bf9d5e5daf5e00f204d8959e4c145b8799d870103cf",
+    "output-hashes.json": "e7b374048c8921da1c83d2d38d7dbfa9d451c021437dcb8b6a66ac01bda0ba60"
+  }
+}

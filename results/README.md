@@ -5,6 +5,7 @@ Start with the question you want to answer:
 | Question | Guide |
 | --- | --- |
 | What did the main SAC and feedback experiment show? | [Main experiment](main/) |
+| How does SAC compare with TD3, PPO and DQN at the same interaction budget? | [RL baseline comparison](rl-baselines/) |
 | When did SAC fail, and what are the simulation limits? | [Limitations and failure cases](limitations/) |
 | How does SAC compare with PI and stronger planning? | [Planning and computation](planning/) |
 
@@ -22,6 +23,9 @@ is **currently local and not publicly downloadable**; full historical verificati
 requires obtaining it from the project owner. Checkout tables and demo models
 remain available. [Inventory and hashes](archive-manifest.json) ·
 [Archive access and restoration](../docs/experiments.md#full-evidence-archive).
+
+The later RL baseline comparison has a separate evidence bundle listed in its
+[evidence index](rl-baselines/evidence.json); it is not in the historical archive.
 
 SAC is an existing algorithm. These are bounded empirical comparisons in synthetic
 markets, not evidence of real-player welfare or a universal advantage over
