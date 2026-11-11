@@ -1,7 +1,7 @@
 {
   "format": "sac-pricing-evidence-v1",
   "created": "2026-11-10",
-  "availability": "Local archive prepared; no public download has been published.",
+  "availability": "Published at https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/releases/tag/pricing-evidence-2026-11-11",
   "archive": {
     "filename": "sac-pricing-evidence-2026-11-10.tar.gz",
     "bytes": 407575085,

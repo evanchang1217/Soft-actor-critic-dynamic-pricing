@@ -18,9 +18,8 @@ frozen records used by the reproduction tools.
 ## Complete evidence
 
 Detailed per-run data, model-training records, audit inputs, source snapshots and
-additional checkpoints are in a separate checksum-verified archive. The archive
-is **currently local and not publicly downloadable**; full historical verification
-requires obtaining it from the project owner. Checkout tables and demo models
+additional checkpoints are in a separate checksum-verified archive, available
+in the [evidence release](https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/releases/tag/pricing-evidence-2026-11-11). Checkout tables and demo models
 remain available. [Inventory and hashes](archive-manifest.json) ·
 [Archive access and restoration](../docs/experiments.md#full-evidence-archive).
 

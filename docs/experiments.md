@@ -48,11 +48,9 @@ policies needed by the demo. Full evidence is in
 **sac-pricing-evidence-2026-11-10.tar.gz**, with the complete inventory and SHA-256
 in [archive-manifest.json](../results/archive-manifest.json).
 
-**Availability:** the archive exists locally outside the repo; no public download
-has been published. The demo and core tests work from a clean clone. Full study
-verification requires obtaining the archive from the project owner.
-To request it, [open a repository issue](https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/issues/new)
-and name `sac-pricing-evidence-2026-11-10.tar.gz`.
+Download the [historical evidence archive](https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/releases/download/pricing-evidence-2026-11-11/sac-pricing-evidence-2026-11-10.tar.gz)
+and [SHA256SUMS](https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/releases/download/pricing-evidence-2026-11-11/SHA256SUMS)
+from the published release. The demo and core tests work from a clean clone.
 Detailed per-run results, audit inputs, and compute-study state and timing
 samples are in the archive; checkout result summaries, figures and demo inputs
 remain available. Start with the [result guides](../results/README.md).
@@ -76,21 +74,12 @@ filenames and equations; they are independent of current package organization.
 The earlier cleanup backup also contains superseded exploration outside the
 maintained evidence collection. Git history has not been rewritten.
 
-### Publishing the evidence
+### RL baseline evidence
 
-After committing and pushing the corresponding code, create a
-[GitHub Release](https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/releases/new)
-for that code version. Attach the named `.tar.gz` archive and a `SHA256SUMS` file
-containing its checksum from the manifest; use a Release asset rather than adding
-the archive to Git. Download the published asset and check its checksum, then
-replace the local-only availability notices with its verified download link.
-Until that upload is complete, the archive is not publicly available.
-
-The newer RL baseline comparison has its own
-**sac-pricing-rl-baselines-2026-11-11.tar.gz** bundle; it is not part of the
-historical archive. Its [evidence index](../results/rl-baselines/evidence.json)
-records the checksum and size. Publish both bundles and their checksums as Release
-assets, preserving the original historical archive unchanged.
+The newer RL baseline comparison has its own [evidence bundle](https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/releases/download/pricing-evidence-2026-11-11/sac-pricing-rl-baselines-2026-11-11.tar.gz);
+it is not part of the historical archive. Its [evidence index](../results/rl-baselines/evidence.json)
+records the checksum and size. Both bundles and SHA256SUMS are available on the
+[evidence release page](https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/releases/tag/pricing-evidence-2026-11-11).
 
 ## Run maintained experiments
 

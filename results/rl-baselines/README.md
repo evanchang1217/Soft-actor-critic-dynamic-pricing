@@ -60,4 +60,4 @@ price responses. The results do not establish a universal algorithm ranking.
 
 The [evidence index](evidence.json) records source/data checksums and the separate
 full-record archive, which includes all policies, training logs, episode metrics
-and frozen source. It is prepared locally; no public download has been published.
+and frozen source. Download it from the [evidence release](https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/releases/tag/pricing-evidence-2026-11-11).

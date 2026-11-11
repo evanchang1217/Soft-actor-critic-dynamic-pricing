@@ -128,7 +128,8 @@ python manage.py check
 ```
 
 The checkout includes result tables, figures and demo models. Full historical
-verification uses a separate archive, currently obtainable from the project owner.
+evidence and the supplementary RL comparison are available in the
+[evidence release](https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/releases/tag/pricing-evidence-2026-11-11).
 [Archive access and verification](docs/experiments.md#full-evidence-archive).
 Save new runs and restored data under ignored `runs/`.
 

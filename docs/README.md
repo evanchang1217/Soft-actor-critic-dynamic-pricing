@@ -20,8 +20,8 @@ training and saved-policy demo. [Reproduction scripts](../scripts/) use frozen
 source and evidence when verifying completed studies.
 
 The saved demo depends on small policies and reference data included in the
-checkout. Full study verification uses the separate [evidence archive](experiments.md#full-evidence-archive),
-which is not currently published. Keep new outputs and restored data under
+checkout. Full study verification uses the published [evidence archive](experiments.md#full-evidence-archive).
+Keep new outputs and restored data under
 ignored `runs/`. Original poster and figure provenance are in [Poster](../Poster/)
 and [assets](assets/README.md).
 
