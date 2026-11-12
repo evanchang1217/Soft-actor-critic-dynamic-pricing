@@ -9,9 +9,10 @@ and sell price adjustments.
 
 Individual undergraduate capstone · NCKU Computer Science ·
 [evanchang1217](https://github.com/evanchang1217). Original capstone: **2nd among
-87 projects** (author-reported). [Poster and project history](docs/project.md#original-poster).
+87 projects** (author-reported). The evaluations below are subsequent research
+extensions. [Poster and project history](docs/project.md#original-poster).
 
-[Demo](docs/demo.md) · [Results](results/main/) · [Methods](docs/methodology.md) ·
+[Demo guide](docs/demo.md) · [Results](results/main/) · [Methods](docs/methodology.md) ·
 [Reproduction](docs/experiments.md)
 
 ```mermaid

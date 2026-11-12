@@ -10,7 +10,7 @@
   different computation budgets.
 - Consolidated study runners, documentation and tests. Kept summaries, key
   figures and the saved-policy demo in the checkout; detailed evidence and frozen
-  sources are in a checksum-verified archive, not yet publicly downloadable.
+  sources are in a checksum-verified [evidence release](https://github.com/evanchang1217/Soft-actor-critic-dynamic-pricing/releases/tag/pricing-evidence-2026-11-11).
 
 See the [research results](results/README.md), [methods](docs/methodology.md) and
 [reproduction guide](docs/experiments.md) for study scope and limitations.
