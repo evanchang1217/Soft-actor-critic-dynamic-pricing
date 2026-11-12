@@ -29,16 +29,16 @@ Single-market illustration; study tables summarize multiple markets and policies
 
 </details>
 
-## Design and implementation
+## My contributions
 
-- **Market formulation:** modeled player budgets, inventories and resource supply,
-  with shared prices controlled from aggregate market observations.
-- **Reward design:** combined trading targets, currency tracking and price
-  stability; tested the revised objective in an equal-budget ablation.
-- **Policy inputs:** re-expressed cumulative accounting totals relative to current
-  player money and tested the representation across market conditions.
-- **Working system:** implemented SAC training/evaluation and a Django demo with
-  policy playback, price trajectories and downloadable data.
+- **Market formulation:** I modeled player budgets, inventories and resource supply,
+  with shared prices controlled from aggregate observations. [Methods](docs/methodology.md).
+- **Reward design:** I combined trading targets, currency tracking and price
+  stability, then compared the objective with the legacy reward. [Ablation](results/main/#reward-design-ablation).
+- **Policy inputs:** I re-expressed cumulative accounting totals relative to current
+  player money and evaluated the representation. [Input comparison](results/limitations/#input-representation-comparison).
+- **Working system:** I implemented SAC training and evaluation, with a Django
+  demo for policy playback, price trajectories and downloads. [Demo](docs/demo.md).
 
 <details>
 <summary>Controllers: SAC, P, PI and online planning</summary>
@@ -87,8 +87,9 @@ reward-design comparison between two SAC variants.
 
 ## Follow-up: policy inputs and planning costs
 
-A separate two-good economy tests persistent inventory, shared production and
-changing demand. Its reward differs from the original market's.
+The following results use a **separate two-good market model** with persistent
+inventory, shared production and changing demand. Its reward and population differ
+from the original three-good market, so their scores are not directly comparable.
 
 - **Policy inputs:** the revised representation improves reward over the original
   SAC inputs by **+0.263** across five paired training seeds (exploratory 95%
@@ -105,11 +106,17 @@ buying can reverse the SAC/P/PI ranking; scarce-production transfer remains diff
 
 ## Run the demo
 
-Use Python 3.10–3.12:
+Use Linux with Python 3.10–3.12. The project is tested on Linux; native Windows
+is not currently supported. A Windows computer can connect to a Linux host to run it.
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
+```
+
+Install dependencies and start the demo:
+
+```bash
 python -m pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
 python -m pip install -r requirements.txt
 python manage.py migrate

@@ -1,6 +1,7 @@
 # Experiments and reproduction
 
-Install dependencies from the [README](../README.md). All new outputs belong
+The maintained workflows are tested on Linux; native Windows is not currently
+supported. Install dependencies from the [README](../README.md). All new outputs belong
 under ignored `runs/`. Keep original-market and aggregate-market rewards separate.
 [Methods](methodology.md) · [Fixed study designs](protocols.md).
 
@@ -118,6 +119,7 @@ python -m experiments.rl_baselines --out runs/rl-baselines-30k --workers 3
 python -m pytest -q tests/test_rl_baselines.py
 ```
 
+The optional baseline integration tests also run in a separate Linux CI job.
 The comparison matches the earlier original-market behavioral study: three goods,
 30,000 interactions per policy, the full recorded SAC configuration (width 128),
 five training seeds and the same 20 evaluation markets. Settings are checked
