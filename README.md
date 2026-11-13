@@ -7,9 +7,10 @@ trading activity and price stability? An NPC (non-player character) shop trades
 with simulated players; **Soft Actor-Critic (SAC)** learns its market-wide buy
 and sell price adjustments.
 
-Individual undergraduate capstone · NCKU Computer Science ·
+**Individual undergraduate capstone** · NCKU Computer Science ·
 [evanchang1217](https://github.com/evanchang1217). Original capstone: **2nd among
-87 projects** (author-reported). The evaluations below are subsequent research
+87 projects**, competing alongside individual and team entries (author-reported).
+The evaluations below are subsequent research
 extensions. [Poster and project history](docs/project.md#original-poster).
 
 [Demo guide](docs/demo.md) · [Results](results/main/) · [Methods](docs/methodology.md) ·
@@ -34,8 +35,9 @@ Single-market illustration; study tables summarize multiple markets and policies
 
 - **Market formulation:** I modeled player budgets, inventories and resource supply,
   with shared prices controlled from aggregate observations. [Methods](docs/methodology.md).
-- **Reward design:** I combined trading targets, currency tracking and price
-  stability, then compared the objective with the legacy reward. [Ablation](results/main/#reward-design-ablation).
+- **Reward design:** I added explicit currency tracking alongside trading and
+  price-stability targets, then compared it with the legacy reward at equal training
+  budgets. [Ablation](results/main/#reward-design-ablation).
 - **Policy inputs:** I re-expressed cumulative accounting totals relative to current
   player money and evaluated the representation. [Input comparison](results/limitations/#input-representation-comparison).
 - **Working system:** I implemented SAC training and evaluation, with a Django
